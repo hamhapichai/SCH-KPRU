@@ -1,0 +1,231 @@
+{
+  "name": "kpru-cms",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "complaint/new",
+        "options": {}
+      },
+      "id": "98d41770-942e-4be6-a612-c78f1333369d",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        16
+      ],
+      "webhookId": "complaintWebhook"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:5000/api/complaints/{{$json[\"body\"][\"ComplaintId\"]}}",
+        "options": {}
+      },
+      "id": "82e853f1-cfa6-4fd8-8edf-47e2a804c9ec",
+      "name": "Fetch Complaint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:5000/api/departments",
+        "options": {}
+      },
+      "id": "d5e21afb-e784-4485-ab84-eecdb7a9fe43",
+      "name": "Fetch Departments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        96,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "=You are an AI assistant that analyzes complaint messages and provides: 1) Department assignment suggestion, 2) Category classification, 3) Short summary (max 200 characters in Thai). Output strictly as JSON with keys: departmentId, suggestedCategory, summary, confidenceScore."
+            },
+            {
+              "content": "=Complaint message: {{$json[\"message\"]}}"
+            },
+            {
+              "content": "=Departments: {{$json[\"departments\"] ? JSON.stringify($json[\"departments\"]) : ''}}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "3315c5c8-cb1a-4a28-bb95-c8b87b0acae8",
+      "name": "AI Processing",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "cSCIKBFvAYa3F0YB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://host.docker.internal:5000/api/admin/AISuggestions/callback",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"ComplaintId\": {{ $('Webhook Trigger').item.json.body.ComplaintId }},\n  \"SuggestedDeptId\": {{ $json.departmentId }},\n  \"SuggestedCategory\": \"{{ $json.suggestedCategory }}\",\n  \"SummarizedByAI\": \"{{ $json.summary }}\",\n  \"Reason\": \"AI Analysis\",\n  \"ConfidenceScore\": {{ $json.confidenceScore }}\n}\n"
+      },
+      "id": "2101c2ce-4d01-4003-a9fa-d271851a4950",
+      "name": "Save AI Suggestion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d84f5b67-260c-4af8-b447-946b09374d76",
+              "name": "message",
+              "value": "={{ $node[\"Fetch Complaint\"].json.message }}",
+              "type": "string"
+            },
+            {
+              "id": "45afa663-6570-4897-b7ab-7c4a4172ca28",
+              "name": "departments",
+              "value": "={{ $node[\"Fetch Departments\"].json }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        240
+      ],
+      "id": "faf9d9bf-e7ae-42e4-b088-58349769786c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.parse($node[\"AI Processing\"].json[\"message\"][\"content\"]\n    .replace(/```json/g,'')\n    .replace(/```/g,'')\n    .trim()\n) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        240
+      ],
+      "id": "6f7cc7ca-f2d7-4230-b19b-45e4dcc8d164",
+      "name": "Parse AI Output"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Complaint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Complaint": {
+      "main": [
+        [
+          {
+            "node": "Fetch Departments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Departments": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Processing": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save AI Suggestion": {
+      "main": [
+        []
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Save AI Suggestion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7ac8e42e-8dcd-4dff-8203-696ae82d876c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1a26e9c26312ffe6dfae77b9738564df3a45f3b115de30581176c6dedc54b306"
+  },
+  "id": "HSHpkrqLRq7kfxUR",
+  "tags": []
+}
