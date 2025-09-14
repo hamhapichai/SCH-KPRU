@@ -1,0 +1,165 @@
+Table Roles {
+ RoleId integer [pk, increment]
+ RoleName text [unique, not null]
+ 
+ note: 'User roles in the system. Admin, Dean, Deputy, Staff'
+}
+
+Table Departments {
+ DepartmentId integer [pk, increment]
+ DepartmentName text [unique, not null]
+ Description text
+ IsAdminOrDeanDept boolean [default: false]
+ IsDeleted boolean [default: false]
+ CreatedAt timestamp [default: `now()`]
+ UpdatedAt timestamp
+ CreatedByUserId integer
+ UpdatedByUserId integer
+ 
+ note: 'Departments that handle complaints'
+}
+
+Table Users {
+ UserId integer [pk, increment]
+ Username text [unique, not null]
+ PasswordHash text [not null]
+ Email text [unique, not null]
+ Name text [not null]
+ Lastname text [not null]
+ Bio text
+ RoleId integer [not null]
+ DepartmentId integer
+ LastLoginAt timestamp
+ LastLoginIP text
+ IsActive boolean [default: true]
+ CreatedAt timestamp [default: `now()`]
+ UpdatedAt timestamp
+ CreatedByUserId integer
+ UpdatedByUserId integer
+ 
+ note: 'System users'
+}
+
+Table Groups {
+ GroupId integer [pk, increment]
+ DepartmentId integer [not null]
+ Name text [not null]
+ Description text
+ IsActive boolean [default: true]
+ CreatedAt timestamp [default: `now()`]
+ UpdatedAt timestamp
+ CreatedByUserId integer
+ UpdatedByUserId integer
+
+ note: 'User groups created by deputy of each department'
+}
+
+Table Members {
+ MembersId integer [pk, increment]
+ GroupId integer [not null]
+ UserId integer [not null]
+ CreatedAt timestamp [default: `now()`]
+ CreatedByUserId integer
+
+ note: 'Member in group'
+}
+
+Table Complaints {
+ ComplaintId integer [pk, increment]
+ ContactName text
+ ContactEmail text
+ ContactPhone text
+ Subject text [not null]
+ Message text [not null]
+ SubmissionDate timestamp [default: `now()`]
+ CurrentStatus text [not null]
+ IsAnonymous boolean [default: false]
+ TicketId uuid [unique, not null]
+ UpdatedAt timestamp
+ UpdatedByUserId integer
+ 
+ note: 'Complaint submissions'
+}
+
+Table ComplaintAssignments {
+ AssignmentId integer [pk, increment]
+ ComplaintId integer [not null]
+ AssignedByUserId integer [not null]
+ AssignedToDeptId integer
+ AssignedToGroupId integer
+ AssignedToUserId integer
+ TargetDate integer
+ Status text [not null]
+ AssignedDate timestamp [default: `now()`]
+ ReceivedDate timestamp
+ CompletedDate timestamp
+ ClosedDate timestamp
+ IsActive boolean [default: true]
+ UpdatedAt timestamp
+ UpdatedByUserId integer
+ 
+ note: 'Assignment of complaints to departments/users'
+}
+
+Table ComplaintLogs {
+ LogId integer [pk, increment]
+ ComplaintId integer [not null]
+ UserId integer
+ DepartmentId integer
+ Action text [not null]
+ Notes text
+ PreviousStatus text
+ NewStatus text
+ Timestamp timestamp [default: `now()`]
+ Metadata text
+ RelatedAssignmentId integer
+ CreatedByUserId integer
+ 
+ note: 'Audit log for complaint actions'
+}
+
+Table AISuggestions {
+ AISuggestionId integer [pk, increment]
+ ComplaintId integer [not null]
+ SuggestedDeptId integer
+ SuggestedCategory text
+ SummarizedByAI text
+ ConfidenceScore real
+ SuggestedAt timestamp [default: `now()`]
+ 
+ note: 'AI-generated suggestions for complaints'
+}
+
+
+// Relationships
+Ref: Users.RoleId > Roles.RoleId
+Ref: Users.DepartmentId > Departments.DepartmentId
+Ref: Groups.DepartmentId > Departments.DepartmentId
+Ref: Members.GroupId > Groups.GroupId
+Ref: Members.UserId > Users.UserId
+
+Ref: Complaints.ComplaintId < ComplaintAssignments.ComplaintId
+Ref: Complaints.ComplaintId < ComplaintLogs.ComplaintId
+Ref: Complaints.ComplaintId < AISuggestions.ComplaintId
+
+Ref: ComplaintAssignments.AssignedToDeptId > Departments.DepartmentId
+Ref: ComplaintAssignments.AssignedToGroupId > Groups.GroupId
+Ref: ComplaintAssignments.AssignedByUserId > Users.UserId
+Ref: ComplaintAssignments.AssignedToUserId > Users.UserId
+
+Ref: ComplaintLogs.UserId > Users.UserId
+Ref: ComplaintLogs.DepartmentId > Departments.DepartmentId
+Ref: ComplaintLogs.RelatedAssignmentId > ComplaintAssignments.AssignmentId
+
+Ref: AISuggestions.SuggestedDeptId > Departments.DepartmentId
+
+Ref: Departments.CreatedByUserId > Users.UserId
+Ref: Departments.UpdatedByUserId > Users.UserId
+Ref: Users.CreatedByUserId > Users.UserId
+Ref: Users.UpdatedByUserId > Users.UserId
+Ref: Groups.CreatedByUserId > Users.UserId
+Ref: Groups.UpdatedByUserId > Users.UserId
+Ref: Members.CreatedByUserId > Users.UserId
+Ref: Complaints.UpdatedByUserId > Users.UserId
+Ref: ComplaintAssignments.UpdatedByUserId > Users.UserId
+Ref: ComplaintLogs.CreatedByUserId > Users.UserId

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sch-kpru-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sch_kpru_prod
+      POSTGRES_USER: sch_kpru_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - sch-kpru-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sch_kpru_user -d sch_kpru_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend/SchKpruApi
+      dockerfile: Dockerfile
+    container_name: sch-kpru-backend-prod
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=sch_kpru_prod;Username=sch_kpru_user;Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT_SECRET}
+      Jwt__Issuer: SCH-KPRU
+      Jwt__Audience: SCH-KPRU-Users
+      WebhookOptions__N8nBaseUrl: ${N8N_BASE_URL}
+      WebhookOptions__AISuggestionCallbackUrl: /webhook/complaints/ai-suggestion
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sch-kpru-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sch-kpru-frontend-prod
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${API_URL}
+      NEXT_PUBLIC_APP_ENV: production
+    networks:
+      - sch-kpru-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sch-kpru-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sch-kpru-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  sch-kpru-network:
+    driver: bridge
