@@ -40,7 +40,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (token) {
           // Validate token by fetching user profile
+          console.log('🔍 AuthContext: Checking auth with token');
           const response = await apiClient.get('/auth/me');
+          console.log('🔍 AuthContext: /auth/me response:', response.data);
           
           // Transform backend response to match User interface
           const userData: User = {
@@ -52,13 +54,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             bio: '',
             roleId: 0,
             roleName: response.data.role || '',
-            departmentId: response.data.departmentId ? parseInt(response.data.departmentId) : undefined,
+            departmentId: response.data.departmentId && response.data.departmentId !== '' ? parseInt(response.data.departmentId) : undefined,
             departmentName: '',
             lastLoginAt: undefined,
             isActive: true,
             createdAt: new Date().toISOString()
           };
           
+          console.log('🔍 AuthContext: Parsed userData:', userData);
           setUser(userData);
         }
       } catch (error) {
@@ -80,27 +83,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password,
       });
 
-      const { token, username: responseUsername, name, lastname, email, role, department } = response.data;
+      const { token } = response.data;
       
-      // Create User object from response data
+      // Store token in localStorage
+      localStorage.setItem('authToken', token);
+      
+      // Fetch complete user data using the token
+      console.log('🔍 AuthContext: Fetching user data after login');
+      const userResponse = await apiClient.get('/auth/me');
+      console.log('🔍 AuthContext: Login /auth/me response:', userResponse.data);
+      
+      // Transform backend response to match User interface
       const userData: User = {
-        userId: 0, // Will be populated from JWT token if needed
-        username: responseUsername,
-        email,
-        firstName: name,
-        lastName: lastname,
+        userId: parseInt(userResponse.data.userId) || 0,
+        username: userResponse.data.username || '',
+        email: userResponse.data.email || '',
+        firstName: userResponse.data.name || '',
+        lastName: userResponse.data.lastname || '',
         bio: '',
-        roleId: 0, // Will be populated if needed
-        roleName: role,
-        departmentId: undefined,
-        departmentName: department,
+        roleId: 0,
+        roleName: userResponse.data.role || '',
+        departmentId: userResponse.data.departmentId && userResponse.data.departmentId !== '' ? parseInt(userResponse.data.departmentId) : undefined,
+        departmentName: '',
         lastLoginAt: undefined,
         isActive: true,
         createdAt: new Date().toISOString()
       };
       
-      // Store token in localStorage
-      localStorage.setItem('authToken', token);
+      console.log('🔍 AuthContext: Login parsed userData:', userData);
       
       // Set user data
       setUser(userData);

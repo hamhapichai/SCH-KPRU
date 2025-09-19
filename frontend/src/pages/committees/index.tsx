@@ -104,13 +104,28 @@ const CommitteesPage: React.FC = () => {
 
   // Fetch groups data
   useEffect(() => {
-    console.log('useEffect triggered:', { loading, user: user ? { roleName: user.roleName, departmentId: user.departmentId } : null });
+    console.log('🔍 CommitteesPage: useEffect triggered:', {
+      loading,
+      user: user ? {
+        roleName: user.roleName,
+        departmentId: user.departmentId,
+        hasDepartmentId: !!user.departmentId
+      } : null
+    });
+
     if (!loading && user?.roleName === 'Deputy' && user.departmentId) {
-      console.log('useEffect: Conditions met, fetching data');
+      console.log('✅ CommitteesPage: Conditions met, fetching data');
       fetchGroups();
       fetchAvailableUsers();
     } else {
-      console.log('useEffect: Conditions not met', { loading, roleName: user?.roleName, departmentId: user?.departmentId });
+      console.log('❌ CommitteesPage: Conditions not met:', {
+        loading,
+        roleName: user?.roleName,
+        departmentId: user?.departmentId,
+        condition1: !loading,
+        condition2: user?.roleName === 'Deputy',
+        condition3: !!user?.departmentId
+      });
     }
   }, [user, loading]);
 

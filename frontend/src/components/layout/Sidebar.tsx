@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle, userRole
       {/* Header */}
       <div className="flex h-16 items-center justify-between px-4">
         {!collapsed && (
-          <h1 className="text-xl text-black font-bold">SCH-KPRU</h1>
+          <h1 className="text-sm text-black font-bold whitespace-nowrap">Smart Complaint Hub-KPRU</h1>
         )}
         <button
           onClick={onToggle}

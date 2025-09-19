@@ -256,7 +256,7 @@ const DashboardPage = () => {
                 <div className="text-2xl font-bold text-gray-900">
                   {loadingStats ? '...' : (stats?.averageResponseTimeDisplay ?? '0 ชั่วโมง')}
                 </div>
-                <div className="text-sm text-gray-600">เวลาตอบกลับเฉลี่ย</div>
+                <div className="text-sm text-gray-600">เวลาในการดำเนินการเฉลี่ย</div>
               </div>
             </CardContent>
           </Card>
