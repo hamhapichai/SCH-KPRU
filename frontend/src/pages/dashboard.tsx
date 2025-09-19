@@ -282,7 +282,8 @@ const DashboardPage = () => {
                 recentComplaints.map((complaint) => (
                   <div
                     key={complaint.complaintId}
-                    className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                    className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
+                    onClick={() => router.push(`/complaints/${complaint.complaintId}/edit`)}
                   >
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{complaint.subject}</h4>

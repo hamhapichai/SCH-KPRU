@@ -58,7 +58,7 @@ namespace SchKpruApi.Data
             var adminUser = new User
             {
                 Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("P@ssw0rd"),
                 Email = "admin@kpru.ac.th",
                 Name = "System",
                 Lastname = "Administrator",

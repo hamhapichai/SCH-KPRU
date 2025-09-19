@@ -217,6 +217,10 @@ const ComplaintsPage = () => {
     },
   ];
 
+  const handleRowClick = (complaint: Complaint) => {
+    router.push(`/complaints/${complaint.complaintId}/edit`);
+  };
+
   const handleViewComplaint = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
     setIsViewModalOpen(true);
@@ -393,6 +397,7 @@ const ComplaintsPage = () => {
               columns={columns}
               loading={loading}
               emptyMessage="ไม่พบข้อร้องเรียน"
+              onRowClick={handleRowClick}
             />
           </div>
         </div>
