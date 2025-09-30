@@ -12,7 +12,9 @@ on:
         type: choice
         options:
         - production
-        - staging
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io

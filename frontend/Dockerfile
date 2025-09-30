@@ -3,18 +3,11 @@ FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json bun.lock* package-lock.json* yarn.lock* pnpm-lock.yaml* ./
-RUN \
-  if [ -f bun.lock ]; then \
-    corepack enable && \
-    corepack prepare bun@stable --activate && \
-    bun install --frozen-lockfile; \
-  elif [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies with npm (more stable in Docker)
+RUN npm ci --omit=dev
 
 # Build stage
 FROM node:18-alpine AS builder
@@ -31,16 +24,7 @@ ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-RUN \
-  if [ -f bun.lock ]; then \
-    corepack enable && \
-    corepack prepare bun@stable --activate && \
-    bun run build; \
-  elif [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+RUN npm run build
 
 # Production stage
 FROM node:18-alpine AS runner
