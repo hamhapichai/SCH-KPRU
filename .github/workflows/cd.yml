@@ -18,8 +18,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
+  IMAGE_NAME_BACKEND: hamhapichai/sch-kpru/backend
+  IMAGE_NAME_FRONTEND: hamhapichai/sch-kpru/frontend
 
 jobs:
   # ==========================================
@@ -55,13 +55,21 @@ jobs:
           # Login to GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Pull latest images
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
+          # Set environment variables
+          export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+          export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+          
+          # Load environment file
+          source .env.prod 2>/dev/null || true
+          
+          # Pull latest images with correct lowercase names
+          docker pull ghcr.io/hamhapichai/sch-kpru/backend:latest
+          docker pull ghcr.io/hamhapichai/sch-kpru/frontend:latest
           
           # Update docker-compose to use registry images
-          export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
-          export FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
+          export BACKEND_IMAGE=ghcr.io/hamhapichai/sch-kpru/backend:latest
+          export FRONTEND_IMAGE=ghcr.io/hamhapichai/sch-kpru/frontend:latest
           
           # Create shared network if not exists
           docker network create sch-kpru-network || true

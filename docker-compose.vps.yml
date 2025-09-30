@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Docker Compose for VPS deployment with existing n8n
 # This configuration assumes n8n is already running and connected to shared network
 
