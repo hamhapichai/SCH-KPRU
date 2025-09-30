@@ -16,7 +16,7 @@ import {
   Alert,
   Modal
 } from '@/components/ui';
-import { Complaint, Department, ComplaintAssignment, ComplaintAssignmentCreate, Group, AISuggestion } from '@/types';
+import { Complaint, Department, ComplaintAssignment, ComplaintAssignmentCreate, Group, AISuggestion, ComplaintLog } from '@/types';
 import { complaintApi, departmentApi, groupApi, aiSuggestionApi } from '@/lib/api';
 
 const EditComplaintPage = () => {
@@ -28,6 +28,7 @@ const EditComplaintPage = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
+  const [complaintLogs, setComplaintLogs] = useState<ComplaintLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +65,7 @@ const EditComplaintPage = () => {
   useEffect(() => {
     if (id && user) {
       fetchComplaint();
+      fetchComplaintLogs();
       fetchAiSuggestion();
       if (user.roleName === 'Dean') {
         fetchDepartments();
@@ -84,6 +86,16 @@ const EditComplaintPage = () => {
       setError('ไม่สามารถโหลดข้อมูลเรื่องร้องเรียนได้');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchComplaintLogs = async () => {
+    try {
+      const response = await complaintApi.getComplaintLogs(parseInt(id as string));
+      setComplaintLogs(response);
+    } catch (error) {
+      console.error('Error fetching complaint logs:', error);
+      // Logs are optional, so we don't set an error
     }
   };
 
@@ -161,6 +173,7 @@ const EditComplaintPage = () => {
       setNewStatus('');
       setStatusNotes('');
       fetchComplaint(); // Refresh data
+      fetchComplaintLogs(); // Refresh logs
     } catch (error) {
       console.error('Error updating status:', error);
       setError('ไม่สามารถอัปเดตสถานะได้');
@@ -395,17 +408,29 @@ const EditComplaintPage = () => {
             )}
 
             {user?.roleName === 'Deputy' && complaint.currentStatus === 'Pending Deputy Dean Approval' && (
-              <Button onClick={() => { setNewStatus('In Progress'); setShowStatusUpdateModal(true); }} className="w-full sm:w-auto">
-                <FileText className="mr-2 h-4 w-4" />
-                เริ่มดำเนินการ
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button onClick={() => { setNewStatus('Pending Dean Approval'); setShowStatusUpdateModal(true); }} className="flex-1 sm:flex-none">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  อนุมัติ
+                </Button>
+                <Button variant="danger" onClick={() => { setNewStatus('Assigned to Committee'); setShowStatusUpdateModal(true); }} className="flex-1 sm:flex-none">
+                  <X className="mr-2 h-4 w-4" />
+                  ส่งกลับดำเนินการใหม่
+                </Button>
+              </div>
             )}
 
             {user?.roleName === 'Dean' && complaint.currentStatus === 'Pending Dean Approval' && (
-              <Button onClick={() => { setNewStatus('In Progress'); setShowStatusUpdateModal(true); }} className="w-full sm:w-auto">
-                <FileText className="mr-2 h-4 w-4" />
-                เริ่มดำเนินการ
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button onClick={() => { setNewStatus('Completed'); setShowStatusUpdateModal(true); }} className="flex-1 sm:flex-none">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  อนุมัติ
+                </Button>
+                <Button variant="danger" onClick={() => { setNewStatus('Assigned to Department'); setShowStatusUpdateModal(true); }} className="flex-1 sm:flex-none">
+                  <X className="mr-2 h-4 w-4" />
+                  ส่งกลับดำเนินการใหม่
+                </Button>
+              </div>
             )}
 
             {user?.roleName === 'Staff' && complaint.currentStatus === 'In Progress' && (
@@ -533,7 +558,7 @@ const EditComplaintPage = () => {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {aiSuggestion.suggestedDepartmentName && (
+                {aiSuggestion.suggestedDepartmentName && user?.roleName === 'Dean' && (
                   <div>
                     <label className="text-sm font-medium text-gray-700 block">หน่วยงานที่แนะนำ</label>
                     <div className="mt-1 flex items-center space-x-2">
@@ -752,7 +777,7 @@ const EditComplaintPage = () => {
           title="ติดตามสถานะและประวัติ"
           size="xl"
         >
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[80vh] overflow-y-auto">
             {/* Basic Information */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
@@ -780,7 +805,7 @@ const EditComplaintPage = () => {
             {/* Detailed Timeline */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">ประวัติการดำเนินการ</h3>
-              <div className="flow-root">
+              <div className="flow-root max-h-96 overflow-y-auto">
                 <ul className="-mb-8">
                   {/* Initial Submission */}
                   <li>
@@ -808,9 +833,9 @@ const EditComplaintPage = () => {
                     </div>
                   </li>
 
-                  {/* Status Changes */}
-                  {complaint.currentStatus !== 'New' && (
-                    <li>
+                  {/* Complaint Logs */}
+                  {complaintLogs.map((log, index) => (
+                    <li key={log.logId}>
                       <div className="relative pb-8">
                         <div className="relative flex space-x-3">
                           <div>
@@ -821,20 +846,32 @@ const EditComplaintPage = () => {
                           <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                สถานะถูกเปลี่ยนเป็น: {getStatusLabel(complaint.currentStatus, user?.roleName)}
+                                {log.action}
                               </p>
-                              <p className="text-sm text-gray-500">
-                                ผู้ดำเนินการ: {complaint.updatedByUserName || 'ระบบ'}
+                              {log.previousStatus && log.newStatus && (
+                                <p className="text-sm text-gray-500">
+                                  สถานะ: {getStatusLabel(log.previousStatus, user?.roleName)} → {getStatusLabel(log.newStatus, user?.roleName)}
+                                </p>
+                              )}
+                              {log.notes && (
+                                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                                  <p className="text-sm text-gray-700">
+                                    <span className="font-medium">หมายเหตุ:</span> {log.notes}
+                                  </p>
+                                </div>
+                              )}
+                              <p className="text-sm text-gray-500 mt-1">
+                                ผู้ดำเนินการ: {log.createdByUserName || 'ระบบ'}
                               </p>
                             </div>
                             <div className="whitespace-nowrap text-right text-sm text-gray-500">
-                              {complaint.updatedAt ? formatDate(complaint.updatedAt) : '-'}
+                              {formatDate(log.timestamp)}
                             </div>
                           </div>
                         </div>
                       </div>
                     </li>
-                  )}
+                  ))}
 
                   {/* Completion */}
                   {complaint.currentStatus === 'Completed' && (

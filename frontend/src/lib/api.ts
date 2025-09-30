@@ -395,53 +395,53 @@ export const complaintApi = {
 export const groupApi = {
   // Get all groups
   getAllGroups: async (): Promise<Group[]> => {
-    const response = await apiClient.get('/Groups');
+    const response = await apiClient.get('/admin/Groups');
     return response.data;
   },
 
   // Get groups by department
   getGroupsByDepartment: async (departmentId: number): Promise<Group[]> => {
-    const response = await apiClient.get(`/Groups/department/${departmentId}`);
+    const response = await apiClient.get(`/admin/Groups/department/${departmentId}`);
     return response.data;
   },
 
   // Get group by ID
   getGroupById: async (id: number): Promise<Group> => {
-    const response = await apiClient.get(`/Groups/${id}`);
+    const response = await apiClient.get(`/admin/Groups/${id}`);
     return response.data;
   },
 
   // Create new group
   createGroup: async (groupData: GroupCreate): Promise<Group> => {
-    const response = await apiClient.post('/Groups', groupData);
+    const response = await apiClient.post('/admin/Groups', groupData);
     return response.data;
   },
 
   // Update group
   updateGroup: async (id: number, groupData: GroupUpdate): Promise<void> => {
-    await apiClient.put(`/Groups/${id}`, groupData);
+    await apiClient.put(`/admin/Groups/${id}`, groupData);
   },
 
   // Delete group
   deleteGroup: async (id: number): Promise<void> => {
-    await apiClient.delete(`/Groups/${id}`);
+    await apiClient.delete(`/admin/Groups/${id}`);
   },
 
   // Get group members
   getGroupMembers: async (groupId: number): Promise<Member[]> => {
-    const response = await apiClient.get(`/Groups/${groupId}/members`);
+    const response = await apiClient.get(`/admin/Groups/${groupId}/members`);
     return response.data;
   },
 
   // Add member to group
   addMemberToGroup: async (groupId: number, memberData: MemberCreate): Promise<Member> => {
-    const response = await apiClient.post(`/Groups/${groupId}/members`, memberData);
+    const response = await apiClient.post(`/admin/Groups/${groupId}/members`, memberData);
     return response.data;
   },
 
   // Remove member from group
   removeMemberFromGroup: async (memberId: number): Promise<void> => {
-    await apiClient.delete(`/Groups/members/${memberId}`);
+    await apiClient.delete(`/admin/Groups/members/${memberId}`);
   },
 };
 
