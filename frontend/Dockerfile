@@ -1,18 +1,19 @@
-# Dependencies stage
-FROM node:18-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# Use official Node.js runtime as base image
+FROM node:18-alpine AS builder
+
+# Set working directory
 WORKDIR /app
+
+# Install dependencies needed for native modules
+RUN apk add --no-cache libc6-compat
 
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies with npm (more stable in Docker)
-RUN npm ci --omit=dev
+# Install dependencies
+RUN npm ci
 
-# Build stage
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
 
 # Build arguments
@@ -26,29 +27,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build the application
 RUN npm run build
 
-# Production stage
+# Production stage - use standalone output
 FROM node:18-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
+# Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy public assets
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Copy built application with correct permissions
+# Copy the standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Switch to non-root user
 USER nextjs
 
 # Expose port
