@@ -260,11 +260,11 @@ jobs:
         # Wait for services to fully start
         sleep 90
         
-        # Check if the main application is responding
+        # Check if the main application is responding via HTTP (since SSL not configured yet)
         echo "Testing main application health..."
-        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }} || echo "000")
+        response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 http://sch-kpru.blurger.dev || echo "000")
         
-        if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ]; then
+        if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "307" ]; then
           echo "✅ Main application is responding (HTTP $response)"
         else
           echo "⚠️ Main application returned: $response"
@@ -272,7 +272,7 @@ jobs:
         
         # Check backend health endpoint through nginx
         echo "Testing backend health endpoint..."
-        backend_response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }}/api/health || echo "000")
+        backend_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 http://sch-kpru.blurger.dev/api/health || echo "000")
         
         if [ "$backend_response" = "200" ]; then
           echo "✅ Backend health check passed!"
@@ -280,8 +280,8 @@ jobs:
           echo "⚠️ Backend health check returned: $backend_response"
         fi
         
-        # Final assessment
-        if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ]; then
+        # Final assessment - accept any successful HTTP response
+        if [ "$response" = "200" ] || [ "$response" = "301" ] || [ "$response" = "302" ] || [ "$response" = "307" ]; then
           echo "✅ Deployment successful! Application is accessible."
         else
           echo "❌ Deployment verification failed!"
