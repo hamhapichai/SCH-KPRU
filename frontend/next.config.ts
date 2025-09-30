@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: false
+  },
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV
   }
 };
 
