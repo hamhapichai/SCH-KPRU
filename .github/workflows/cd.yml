@@ -222,10 +222,29 @@ jobs:
           # Login to GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
+          # Setup SSL certificates for n8n subdomain if not exists
+          if [ ! -f /home/sch-kpru/nginx/ssl/n8n-fullchain.pem ]; then
+            # Copy n8n certificate if exists
+            if [ -d "/etc/letsencrypt/live/n8n.sch-kpru.blurger.dev" ]; then
+              sudo cp /etc/letsencrypt/live/n8n.sch-kpru.blurger.dev/fullchain.pem /home/sch-kpru/nginx/ssl/n8n-fullchain.pem
+              sudo cp /etc/letsencrypt/live/n8n.sch-kpru.blurger.dev/privkey.pem /home/sch-kpru/nginx/ssl/n8n-privkey.pem
+              sudo chown 1000:1000 /home/sch-kpru/nginx/ssl/n8n-*
+            else
+              # Use main certificate as fallback
+              cp /home/sch-kpru/nginx/ssl/fullchain.pem /home/sch-kpru/nginx/ssl/n8n-fullchain.pem
+              cp /home/sch-kpru/nginx/ssl/privkey.pem /home/sch-kpru/nginx/ssl/n8n-privkey.pem
+            fi
+          fi
+          
           # Set environment variables
           export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
           export JWT_SECRET="${{ secrets.JWT_SECRET }}"
           export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+          export POSTGRES_DB="sch_kpru_prod"
+          export POSTGRES_USER="sch_kpru_user"
+          export JWT_ISSUER="SCH-KPRU"
+          export JWT_AUDIENCE="SCH-KPRU-Users"
+          export N8N_BASE_URL="http://n8n:5678"
           
           # Load environment file
           source .env.prod 2>/dev/null || true
@@ -241,8 +260,11 @@ jobs:
           # Create shared network if not exists
           docker network create sch-kpru-network || true
           
-          # Deploy with zero downtime using VPS-specific compose file
-          docker-compose -f docker-compose.vps.yml up -d --no-build
+          # Stop and remove existing containers to ensure clean deployment
+          docker-compose -f docker-compose.vps.yml down || true
+          
+          # Deploy with environment variables
+          docker-compose -f docker-compose.vps.yml up -d
           
           # Clean up old images
           docker system prune -f
