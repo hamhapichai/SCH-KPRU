@@ -1,13 +1,9 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Filter, Eye, Edit, Trash2, Settings, X } from 'lucide-react';
+import { Search, Filter, Eye, Edit, Settings, X } from 'lucide-react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardContent, 
   Button, 
   Input, 
   Select, 
@@ -41,7 +37,7 @@ const ComplaintsPage = () => {
   }, [user, router]);
 
   // Fetch complaints data
-  const fetchComplaints = async () => {
+  const fetchComplaints = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await complaintApi.getFilteredComplaints(
@@ -60,14 +56,14 @@ const ComplaintsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentPage, pageSize, searchTerm, statusFilter]);
 
   // Fetch data when filters or page changes
   React.useEffect(() => {
     if (user && user.roleName !== 'Admin') {
       fetchComplaints();
     }
-  }, [user, searchTerm, statusFilter, currentPage, pageSize]);
+  }, [user, searchTerm, statusFilter, currentPage, pageSize, fetchComplaints]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -335,7 +331,7 @@ const ComplaintsPage = () => {
                     {searchTerm && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <Search className="mr-1 h-3 w-3" />
-                        ค้นหา: "{searchTerm}"
+                        ค้นหา: &quot;{searchTerm}&quot;
                         <button
                           onClick={() => setSearchTerm('')}
                           className="ml-2 hover:bg-blue-200 rounded-full p-0.5"

@@ -17,7 +17,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     };
 
     res.status(200).json(healthCheck);
-  } catch (error) {
+  } catch {
     res.status(500).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
