@@ -5,8 +5,7 @@ import {
   LayoutDashboard, 
   MessageSquare, 
   Users, 
-  Building2, 
-  Settings,
+  Building2,
   ChevronLeft,
   ChevronRight,
   Users2

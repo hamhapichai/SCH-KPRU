@@ -6,15 +6,14 @@ import { User } from '@/types';
 import { userApi } from '@/lib/api';
 import UserTable from '@/components/UserTable';
 import UserModal from '@/components/UserModal';
-import { Plus, Search, Users, UserCheck, UserX, Shield } from 'lucide-react';
+import { Plus, Users, UserCheck, UserX, Shield } from 'lucide-react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { 
   Card, 
   CardHeader, 
   CardTitle, 
   CardContent, 
-  Button, 
-  Input,
+  Button,
   Alert
 } from '@/components/ui';
 
@@ -27,7 +26,6 @@ const UsersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   // Check authentication and role
   useEffect(() => {
