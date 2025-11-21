@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { Department, User, Complaint, Role, ComplaintCreate, ComplaintUpdate, PaginatedResponse, Group, GroupCreate, GroupUpdate, Member, MemberCreate } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
+  ? `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_API_URL.endsWith('/api') ? '' : '/api'}`
+  : 'http://localhost:5000/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
