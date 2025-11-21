@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "url": "=http://host.docker.internal:5000/api/complaints/{{$json[\"body\"][\"ComplaintId\"]}}",
+        "url": "=https://api.sch-kpru.blurger.dev/api/complaints/{{$json[\"body\"][\"ComplaintId\"]}}",
         "options": {}
       },
       "id": "82e853f1-cfa6-4fd8-8edf-47e2a804c9ec",
@@ -33,7 +33,7 @@
     },
     {
       "parameters": {
-        "url": "http://host.docker.internal:5000/api/departments",
+        "url": "https://api.sch-kpru.blurger.dev/api/departments",
         "options": {}
       },
       "id": "d5e21afb-e784-4485-ab84-eecdb7a9fe43",
@@ -84,7 +84,7 @@
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "http://host.docker.internal:5000/api/admin/AISuggestions/callback",
+        "url": "https://api.sch-kpru.blurger.dev/api/admin/AISuggestions/callback",
         "jsonParameters": true,
         "options": {},
         "bodyParametersJson": "={\n  \"ComplaintId\": {{ $('Webhook Trigger').item.json.body.ComplaintId }},\n  \"SuggestedDeptId\": {{ $json.departmentId }},\n  \"SuggestedCategory\": \"{{ $json.suggestedCategory }}\",\n  \"SummarizedByAI\": \"{{ $json.summary }}\",\n  \"Reason\": \"AI Analysis\",\n  \"ConfidenceScore\": {{ $json.confidenceScore }}\n}\n"
