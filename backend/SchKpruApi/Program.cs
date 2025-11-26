@@ -106,6 +106,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try 
+    {
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        // Log error เผื่อ Database ยังไม่พร้อม
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
     await DataSeeder.SeedAsync(context);
 }
 
