@@ -117,20 +117,40 @@
 
 ```mermaid
 graph TB
-    A[🌐 Frontend - Next.js 15.5] --> B[🔗 API Gateway]
-    B --> C[⚙️ Backend - .NET 8.0]
-    C --> D[🗄️ Database - PostgreSQL 15]
-    C --> E[🤖 AI Service - GPT-4]
-    C --> F[📁 File Storage]
-    B --> G[🔔 n8n Workflows]
-    G --> H[📧 Email Service]
-    G --> I[💬 Line Notify]
+    subgraph Dokploy["🖥️ Dokploy Server (Single VPS)"]
+        subgraph Services["Managed Services"]
+            D[🗄️ PostgreSQL 15<br/>Database Container]
+        end
+        
+        subgraph Applications["Application Containers"]
+            B[🔄 Traefik<br/>Reverse Proxy]
+            A[🌐 Frontend<br/>Next.js 15.5]
+            C[⚙️ Backend<br/>.NET 8.0]
+            F[🔔 n8n<br/>Automation]
+        end
+    end
     
+    E[🤖 AI Service<br/>External - GPT-4]
+    G[📧 Email Service<br/>External]
+    H[💬 Line Notify<br/>External]
+    
+    A --> B
+    B --> C
+    C --> D
+    C --> E
+    F --> G
+    F --> H
+    B --> F
+    
+    style Dokploy fill:#f0f0f0,stroke:#333,stroke-width:2px
+    style Services fill:#e8f5e9,stroke:#2e7d32
+    style Applications fill:#e3f2fd,stroke:#1976d2
     style A fill:#61dafb
+    style B fill:#ff9900
     style C fill:#512bd4
     style D fill:#336791
-    style E fill:#412991
-    style G fill:#ff6d5a
+    style E fill:#f3e5f5
+    style F fill:#ff6d5a
 ```
 
 ### 🔄 ขั้นตอนการทำงาน | Workflow Process
