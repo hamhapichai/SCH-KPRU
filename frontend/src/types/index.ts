@@ -76,6 +76,15 @@ export interface Department {
   [key: string]: unknown;
 }
 
+export interface ComplaintAttachment {
+  attachmentId: number;
+  originalFileName: string;
+  s3Url: string;
+  contentType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
 export interface Complaint {
   complaintId: number;
   contactName?: string;
@@ -89,6 +98,8 @@ export interface Complaint {
   ticketId: string;
   updatedAt?: string;
   updatedByUserName?: string;
+  urgent?: boolean;
+  attachments?: ComplaintAttachment[];
   [key: string]: unknown;
 }
 
@@ -258,6 +269,7 @@ export interface RecentComplaint {
   departmentName?: string;
   submissionDate: string;
   ticketId: string;
+  urgent?: boolean;
 }
 
 export interface AISuggestion {

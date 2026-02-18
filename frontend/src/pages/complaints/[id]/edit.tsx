@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Save, X, Calendar, User, Building, FileText, Clock, Users, CheckCircle } from 'lucide-react';
+import { Save, X, User, Building, FileText, Clock, Users, CheckCircle, Paperclip, Sparkles } from 'lucide-react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import {
   Card,
@@ -16,8 +16,9 @@ import {
   Alert,
   Modal
 } from '@/components/ui';
+import AttachmentViewer from '@/components/complaints/AttachmentViewer';
 import { Complaint, Department, ComplaintAssignment, ComplaintAssignmentCreate, Group, AISuggestion, ComplaintLog } from '@/types';
-import { complaintApi, departmentApi, groupApi, aiSuggestionApi } from '@/lib/api';
+import { complaintApi, departmentApi, groupApi, aiSuggestionApi, aiToolsApi } from '@/lib/api';
 
 const EditComplaintPage = () => {
   const router = useRouter();
@@ -54,6 +55,10 @@ const EditComplaintPage = () => {
     targetDate: undefined,
     notes: undefined,
   });
+
+  // AI rewrite state
+  const [rewritingAssignment, setRewritingAssignment] = useState(false);
+  const [rewritingCommittee, setRewritingCommittee] = useState(false);
 
   // Status update state
   const [newStatus, setNewStatus] = useState('');
@@ -135,9 +140,14 @@ const EditComplaintPage = () => {
 
   const handleAssignComplaint = async () => {
     if (!complaint) return;
+    if (!assignmentForm.assignedToDeptId) {
+      setError('กรุณาเลือกหน่วยงานที่รับผิดชอบ');
+      return;
+    }
 
     try {
       setSaving(true);
+      setError(null);
       const assignmentData = {
         ...assignmentForm,
         complaintId: complaint.complaintId,
@@ -218,6 +228,32 @@ const EditComplaintPage = () => {
       alert(errorMessage);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRewriteAssignmentNotes = async () => {
+    if (!assignmentForm.notes?.trim()) return;
+    try {
+      setRewritingAssignment(true);
+      const result = await aiToolsApi.rewriteFormal(assignmentForm.notes);
+      setAssignmentForm(prev => ({ ...prev, notes: result }));
+    } catch (err) {
+      console.error('AI rewrite error:', err);
+    } finally {
+      setRewritingAssignment(false);
+    }
+  };
+
+  const handleRewriteCommitteeNotes = async () => {
+    if (!committeeAssignmentForm.notes?.trim()) return;
+    try {
+      setRewritingCommittee(true);
+      const result = await aiToolsApi.rewriteFormal(committeeAssignmentForm.notes);
+      setCommitteeAssignmentForm(prev => ({ ...prev, notes: result }));
+    } catch (err) {
+      console.error('AI rewrite error:', err);
+    } finally {
+      setRewritingCommittee(false);
     }
   };
 
@@ -365,7 +401,15 @@ const EditComplaintPage = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{complaint.subject}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{complaint.subject}</h1>
+              {complaint.urgent && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200 shrink-0">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                  เรื่องด่วน
+                </span>
+              )}
+            </div>
             <p className="text-gray-600 text-sm sm:text-base break-all">Ticket ID: {complaint.ticketId}</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -473,7 +517,15 @@ const EditComplaintPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <span className="text-lg">รายละเอียดเรื่องร้องเรียน</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-lg">รายละเอียดเรื่องร้องเรียน</span>
+                {complaint.urgent && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                    เรื่องด่วน
+                  </span>
+                )}
+              </div>
               <Badge variant={getStatusColor(complaint.currentStatus) as any} className="w-fit">
                 {getStatusLabel(complaint.currentStatus, user?.roleName)}
               </Badge>
@@ -528,6 +580,27 @@ const EditComplaintPage = () => {
                 <p className="text-sm break-words">{complaint.updatedByUserName || '-'}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* File Attachments */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Paperclip className="h-5 w-5" />
+              <span className="text-lg">ไฟล์แนบ</span>
+              {complaint.attachments && complaint.attachments.length > 0 && (
+                <Badge variant="info" className="text-xs">
+                  {complaint.attachments.length} ไฟล์
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AttachmentViewer
+              attachments={complaint.attachments ?? []}
+              complaintId={complaint.complaintId}
+            />
           </CardContent>
         </Card>
 
@@ -649,13 +722,15 @@ const EditComplaintPage = () => {
         {/* Assignment Modal */}
         <Modal
           isOpen={showAssignmentForm}
-          onClose={() => setShowAssignmentForm(false)}
+          onClose={() => { setShowAssignmentForm(false); setError(null); }}
           title="ส่งต่อไปยังหน่วยงาน"
           size="lg"
         >
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">เลือกหน่วยงาน</label>
+              <label className="text-sm font-medium text-gray-700">
+                เลือกหน่วยงาน <span className="text-red-500">*</span>
+              </label>
               <Select
                 placeholder="เลือกหน่วยงานที่รับผิดชอบ"
                 value={assignmentForm.assignedToDeptId?.toString() || ''}
@@ -668,6 +743,9 @@ const EditComplaintPage = () => {
                   label: dept.departmentName
                 }))}
               />
+              {!assignmentForm.assignedToDeptId && (
+                <p className="mt-1 text-xs text-red-500">กรุณาเลือกหน่วยงาน</p>
+              )}
             </div>
 
             <div>
@@ -685,7 +763,18 @@ const EditComplaintPage = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">หมายเหตุ</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-gray-700">หมายเหตุ</label>
+                <button
+                  type="button"
+                  onClick={handleRewriteAssignmentNotes}
+                  disabled={rewritingAssignment || !assignmentForm.notes?.trim()}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {rewritingAssignment ? 'กำลังแปลง...' : 'เขียนภาษาราชการ'}
+                </button>
+              </div>
               <Textarea
                 placeholder="รายละเอียดเพิ่มเติมสำหรับหน่วยงานที่รับผิดชอบ"
                 value={assignmentForm.notes || ''}
@@ -698,10 +787,10 @@ const EditComplaintPage = () => {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleAssignComplaint} disabled={saving}>
+              <Button onClick={handleAssignComplaint} disabled={saving || !assignmentForm.assignedToDeptId}>
                 {saving ? 'กำลังส่งต่อ...' : 'ส่งต่อ'}
               </Button>
-              <Button variant="outline" onClick={() => setShowAssignmentForm(false)}>
+              <Button variant="outline" onClick={() => { setShowAssignmentForm(false); setError(null); }}>
                 ยกเลิก
               </Button>
             </div>
@@ -747,7 +836,18 @@ const EditComplaintPage = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">หมายเหตุ</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-gray-700">หมายเหตุ</label>
+                <button
+                  type="button"
+                  onClick={handleRewriteCommitteeNotes}
+                  disabled={rewritingCommittee || !committeeAssignmentForm.notes?.trim()}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {rewritingCommittee ? 'กำลังแปลง...' : 'เขียนภาษาราชการ'}
+                </button>
+              </div>
               <Textarea
                 placeholder="รายละเอียดเพิ่มเติมสำหรับคณะกรรมการที่รับผิดชอบ"
                 value={committeeAssignmentForm.notes || ''}

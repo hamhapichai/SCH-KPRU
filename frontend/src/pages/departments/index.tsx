@@ -97,13 +97,18 @@ const DepartmentsPage = () => {
     {
       key: 'description',
       title: 'คำอธิบาย',
-      render: (value) => (
-        <div className="max-w-md">
-          <p className="text-sm text-gray-600 line-clamp-2">
-            {String(value || 'ไม่มีคำอธิบาย')}
-          </p>
-        </div>
-      ),
+      width: '300px',
+      render: (value) => {
+        const text = String(value || 'ไม่มีคำอธิบาย');
+        const truncated = text.length > 30 ? text.slice(0, 30) + '...' : text;
+        return (
+          <div title={text}>
+            <p className="text-sm text-gray-600">
+              {truncated}
+            </p>
+          </div>
+        );
+      },
     },
     {
       key: 'userCount',

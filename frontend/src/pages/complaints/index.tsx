@@ -156,7 +156,14 @@ const ComplaintsPage = () => {
       title: 'หัวข้อ',
       render: (value, record) => (
         <div>
-          <div className="font-medium">{String(value)}</div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{String(value)}</span>
+            {record.urgent && (
+              <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                เร่งด่วน
+              </span>
+            )}
+          </div>
           <div className="text-sm text-gray-500">
             {record.isAnonymous ? 'ผู้ใช้ไม่ระบุชื่อ' : record.contactName}
           </div>
@@ -201,13 +208,6 @@ const ComplaintsPage = () => {
           >
             <Edit className="h-4 w-4" />
           </Button>
-          {/* <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteComplaint(record.complaintId)}
-          >
-            <Trash2 className="h-4 w-4 text-red-500" />
-          </Button> */}
         </div>
       ),
     },
@@ -220,12 +220,6 @@ const ComplaintsPage = () => {
   const handleViewComplaint = (complaint: Complaint) => {
     setSelectedComplaint(complaint);
     setIsViewModalOpen(true);
-  };
-
-  const handleDeleteComplaint = (id: number) => {
-    if (confirm('คุณต้องการลบข้อร้องเรียนนี้ใช่หรือไม่?')) {
-      setComplaints(complaints.filter(c => c.complaintId !== id));
-    }
   };
 
   const statusOptions = [

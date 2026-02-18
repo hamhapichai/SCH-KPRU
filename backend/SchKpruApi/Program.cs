@@ -4,7 +4,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using SchKpruApi.Data;
 using SchKpruApi.Repositories;
+using SchKpruApi.Services.Interfaces;
 using SchKpruApi.Services;
+using Amazon.S3;
+using Amazon.Extensions.NETCore.Setup;
+using SchKpruApi.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Configure Entity Framework
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
-                      ?? builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -67,11 +71,33 @@ builder.Services.AddScoped<IAISuggestionService, AISuggestionService>();
 builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddSingleton<IWebhookQueueService, WebhookQueueService>();
 
+#region AWS S3 Services
+
+var awsOptions = builder.Configuration.GetSection("AWS").Get<AWSOptions>();
+var s3DevConfig = new AmazonS3Config
+{
+    ServiceURL = builder.Configuration["AWS:ServiceURL"],
+    ForcePathStyle = bool.Parse(builder.Configuration["AWS:ForcePathStyle"] ?? "true"),
+    AuthenticationRegion = builder.Configuration["AWS:Region"]
+};
+var awsaccessKey = builder.Configuration["AWS:AccessKey"];
+var awssecretKey = builder.Configuration["AWS:SecretKey"];
+var s3Client = new AmazonS3Client(awsaccessKey, awssecretKey, s3DevConfig);
+builder.Services.AddSingleton<IAmazonS3>(s3Client);
+
+builder.Services.AddScoped<IStorageService, StorageService>();
+
+#endregion
+
 // Register Background Services
 builder.Services.AddHostedService<WebhookQueueBackgroundService>();
 
 // Register HttpClient
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("n8n", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 // Configure WebhookOptions
 builder.Services.Configure<WebhookOptions>(builder.Configuration.GetSection("WebhookOptions"));
@@ -83,16 +109,16 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins("http://localhost:3000", "https://sch-kpru.blurger.dev")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
     options.AddPolicy("AllowAll",
         policy =>
         {
             policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
@@ -106,7 +132,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try 
+    try
     {
         context.Database.Migrate();
     }
@@ -116,6 +142,7 @@ using (var scope = app.Services.CreateScope())
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating the database.");
     }
+
     await DataSeeder.SeedAsync(context);
 }
 
@@ -124,6 +151,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    Console.WriteLine("Running in Development environment");
+    Console.WriteLine($"Database Connection String: {connectionString}");
 }
 
 app.UseHttpsRedirection();

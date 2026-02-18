@@ -1,264 +1,263 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchKpruApi.DTOs;
-using SchKpruApi.Services;
 using System.Security.Claims;
+using SchKpruApi.Services.Interfaces;
 
-namespace SchKpruApi.Controllers
+namespace SchKpruApi.Controllers;
+
+[ApiController]
+[Route("api/admin/[controller]")]
+[Authorize]
+public class GroupsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/admin/[controller]")]
-    [Authorize]
-    public class GroupsController : ControllerBase
+    private readonly IGroupService _groupService;
+    private readonly IMemberService _memberService;
+
+    public GroupsController(IGroupService groupService, IMemberService memberService)
     {
-        private readonly IGroupService _groupService;
-        private readonly IMemberService _memberService;
+        _groupService = groupService;
+        _memberService = memberService;
+    }
 
-        public GroupsController(IGroupService groupService, IMemberService memberService)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GroupResponseDto>>> GetAllGroups()
+    {
+        try
         {
-            _groupService = groupService;
-            _memberService = memberService;
+            var groups = await _groupService.GetAllGroupsAsync();
+            var result = groups.Select(g => new GroupResponseDto
+            {
+                GroupId = g.GroupId,
+                DepartmentId = g.DepartmentId,
+                DepartmentName = g.Department?.DepartmentName ?? "",
+                Name = g.Name,
+                Description = g.Description,
+                IsActive = g.IsActive,
+                CreatedAt = g.CreatedAt,
+                UpdatedAt = g.UpdatedAt,
+                CreatedByUserName = g.CreatedByUser?.Name + " " + g.CreatedByUser?.Lastname,
+                UpdatedByUserName = g.UpdatedByUser?.Name + " " + g.UpdatedByUser?.Lastname,
+                MemberCount = g.Members?.Count ?? 0
+            });
+            return Ok(result);
         }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<GroupResponseDto>>> GetAllGroups()
+        catch (Exception ex)
         {
-            try
-            {
-                var groups = await _groupService.GetAllGroupsAsync();
-                var result = groups.Select(g => new GroupResponseDto
-                {
-                    GroupId = g.GroupId,
-                    DepartmentId = g.DepartmentId,
-                    DepartmentName = g.Department?.DepartmentName ?? "",
-                    Name = g.Name,
-                    Description = g.Description,
-                    IsActive = g.IsActive,
-                    CreatedAt = g.CreatedAt,
-                    UpdatedAt = g.UpdatedAt,
-                    CreatedByUserName = g.CreatedByUser?.Name + " " + g.CreatedByUser?.Lastname,
-                    UpdatedByUserName = g.UpdatedByUser?.Name + " " + g.UpdatedByUser?.Lastname,
-                    MemberCount = g.Members?.Count ?? 0
-                });
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpGet("department/{departmentId}")]
-        public async Task<ActionResult<IEnumerable<GroupResponseDto>>> GetGroupsByDepartment(int departmentId)
+    [HttpGet("department/{departmentId}")]
+    public async Task<ActionResult<IEnumerable<GroupResponseDto>>> GetGroupsByDepartment(int departmentId)
+    {
+        try
         {
-            try
+            var groups = await _groupService.GetGroupsByDepartmentIdAsync(departmentId);
+            var result = groups.Select(g => new GroupResponseDto
             {
-                var groups = await _groupService.GetGroupsByDepartmentIdAsync(departmentId);
-                var result = groups.Select(g => new GroupResponseDto
-                {
-                    GroupId = g.GroupId,
-                    DepartmentId = g.DepartmentId,
-                    DepartmentName = g.Department?.DepartmentName ?? "",
-                    Name = g.Name,
-                    Description = g.Description,
-                    IsActive = g.IsActive,
-                    CreatedAt = g.CreatedAt,
-                    UpdatedAt = g.UpdatedAt,
-                    CreatedByUserName = g.CreatedByUser?.Name + " " + g.CreatedByUser?.Lastname,
-                    UpdatedByUserName = g.UpdatedByUser?.Name + " " + g.UpdatedByUser?.Lastname,
-                    MemberCount = g.Members?.Count ?? 0
-                });
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                GroupId = g.GroupId,
+                DepartmentId = g.DepartmentId,
+                DepartmentName = g.Department?.DepartmentName ?? "",
+                Name = g.Name,
+                Description = g.Description,
+                IsActive = g.IsActive,
+                CreatedAt = g.CreatedAt,
+                UpdatedAt = g.UpdatedAt,
+                CreatedByUserName = g.CreatedByUser?.Name + " " + g.CreatedByUser?.Lastname,
+                UpdatedByUserName = g.UpdatedByUser?.Name + " " + g.UpdatedByUser?.Lastname,
+                MemberCount = g.Members?.Count ?? 0
+            });
+            return Ok(result);
         }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GroupResponseDto>> GetGroup(int id)
+        catch (Exception ex)
         {
-            try
-            {
-                var group = await _groupService.GetGroupByIdAsync(id);
-                if (group == null)
-                    return NotFound($"Group with ID {id} not found");
-
-                var result = new GroupResponseDto
-                {
-                    GroupId = group.GroupId,
-                    DepartmentId = group.DepartmentId,
-                    DepartmentName = group.Department?.DepartmentName ?? "",
-                    Name = group.Name,
-                    Description = group.Description,
-                    IsActive = group.IsActive,
-                    CreatedAt = group.CreatedAt,
-                    UpdatedAt = group.UpdatedAt,
-                    CreatedByUserName = group.CreatedByUser?.Name + " " + group.CreatedByUser?.Lastname,
-                    UpdatedByUserName = group.UpdatedByUser?.Name + " " + group.UpdatedByUser?.Lastname,
-                    MemberCount = group.Members?.Count ?? 0
-                };
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpPost]
-        public async Task<ActionResult<GroupResponseDto>> CreateGroup(GroupCreateDto groupDto)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GroupResponseDto>> GetGroup(int id)
+    {
+        try
         {
-            try
+            var group = await _groupService.GetGroupByIdAsync(id);
+            if (group == null)
+                return NotFound($"Group with ID {id} not found");
+
+            var result = new GroupResponseDto
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                    return Unauthorized("User ID not found in token");
+                GroupId = group.GroupId,
+                DepartmentId = group.DepartmentId,
+                DepartmentName = group.Department?.DepartmentName ?? "",
+                Name = group.Name,
+                Description = group.Description,
+                IsActive = group.IsActive,
+                CreatedAt = group.CreatedAt,
+                UpdatedAt = group.UpdatedAt,
+                CreatedByUserName = group.CreatedByUser?.Name + " " + group.CreatedByUser?.Lastname,
+                UpdatedByUserName = group.UpdatedByUser?.Name + " " + group.UpdatedByUser?.Lastname,
+                MemberCount = group.Members?.Count ?? 0
+            };
 
-                var group = new Models.Group
-                {
-                    DepartmentId = groupDto.DepartmentId,
-                    Name = groupDto.Name,
-                    Description = groupDto.Description,
-                    IsActive = true
-                };
-
-                var createdGroup = await _groupService.CreateGroupAsync(group, userId);
-
-                var result = new GroupResponseDto
-                {
-                    GroupId = createdGroup.GroupId,
-                    DepartmentId = createdGroup.DepartmentId,
-                    DepartmentName = createdGroup.Department?.DepartmentName ?? "",
-                    Name = createdGroup.Name,
-                    Description = createdGroup.Description,
-                    IsActive = createdGroup.IsActive,
-                    CreatedAt = createdGroup.CreatedAt,
-                    UpdatedAt = createdGroup.UpdatedAt,
-                    CreatedByUserName = createdGroup.CreatedByUser?.Name + " " + createdGroup.CreatedByUser?.Lastname,
-                    UpdatedByUserName = createdGroup.UpdatedByUser?.Name + " " + createdGroup.UpdatedByUser?.Lastname,
-                    MemberCount = createdGroup.Members?.Count ?? 0
-                };
-
-                return CreatedAtAction(nameof(GetGroup), new { id = result.GroupId }, result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return Ok(result);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateGroup(int id, GroupUpdateDto groupDto)
+        catch (Exception ex)
         {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                    return Unauthorized("User ID not found in token");
-
-                var group = new Models.Group
-                {
-                    Name = groupDto.Name,
-                    Description = groupDto.Description,
-                    IsActive = groupDto.IsActive
-                };
-
-                var updatedGroup = await _groupService.UpdateGroupAsync(id, group, userId);
-                if (updatedGroup == null)
-                    return NotFound($"Group with ID {id} not found");
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGroup(int id)
+    [HttpPost]
+    public async Task<ActionResult<GroupResponseDto>> CreateGroup(GroupCreateDto groupDto)
+    {
+        try
         {
-            try
-            {
-                var result = await _groupService.DeleteGroupAsync(id);
-                if (!result)
-                    return NotFound($"Group with ID {id} not found");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized("User ID not found in token");
 
-                return NoContent();
-            }
-            catch (Exception ex)
+            var group = new Models.Group
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                DepartmentId = groupDto.DepartmentId,
+                Name = groupDto.Name,
+                Description = groupDto.Description,
+                IsActive = true
+            };
+
+            var createdGroup = await _groupService.CreateGroupAsync(group, userId);
+
+            var result = new GroupResponseDto
+            {
+                GroupId = createdGroup.GroupId,
+                DepartmentId = createdGroup.DepartmentId,
+                DepartmentName = createdGroup.Department?.DepartmentName ?? "",
+                Name = createdGroup.Name,
+                Description = createdGroup.Description,
+                IsActive = createdGroup.IsActive,
+                CreatedAt = createdGroup.CreatedAt,
+                UpdatedAt = createdGroup.UpdatedAt,
+                CreatedByUserName = createdGroup.CreatedByUser?.Name + " " + createdGroup.CreatedByUser?.Lastname,
+                UpdatedByUserName = createdGroup.UpdatedByUser?.Name + " " + createdGroup.UpdatedByUser?.Lastname,
+                MemberCount = createdGroup.Members?.Count ?? 0
+            };
+
+            return CreatedAtAction(nameof(GetGroup), new { id = result.GroupId }, result);
         }
-
-        [HttpGet("{id}/members")]
-        public async Task<ActionResult<IEnumerable<MemberResponseDto>>> GetGroupMembers(int id)
+        catch (Exception ex)
         {
-            try
-            {
-                var members = await _memberService.GetMembersByGroupIdAsync(id);
-                var result = members.Select(m => new MemberResponseDto
-                {
-                    MembersId = m.MembersId,
-                    GroupId = m.GroupId,
-                    UserId = m.UserId,
-                    UserName = m.User?.Username ?? "",
-                    UserEmail = m.User?.Email ?? "",
-                    UserFullName = m.User?.Name + " " + m.User?.Lastname,
-                    CreatedAt = m.CreatedAt,
-                    CreatedByUserName = m.CreatedByUser?.Name + " " + m.CreatedByUser?.Lastname
-                });
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpPost("{id}/members")]
-        public async Task<IActionResult> AddMember(int id, MemberCreateDto memberDto)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateGroup(int id, GroupUpdateDto groupDto)
+    {
+        try
         {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-                    return Unauthorized("User ID not found in token");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized("User ID not found in token");
 
-                var member = new Models.Member
-                {
-                    GroupId = id,
-                    UserId = memberDto.UserId
-                };
-
-                var createdMember = await _memberService.CreateMemberAsync(member, userId);
-                return CreatedAtAction(nameof(GetGroupMembers), new { id = createdMember.GroupId }, createdMember);
-            }
-            catch (Exception ex)
+            var group = new Models.Group
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                Name = groupDto.Name,
+                Description = groupDto.Description,
+                IsActive = groupDto.IsActive
+            };
+
+            var updatedGroup = await _groupService.UpdateGroupAsync(id, group, userId);
+            if (updatedGroup == null)
+                return NotFound($"Group with ID {id} not found");
+
+            return NoContent();
         }
-
-        [HttpDelete("members/{memberId}")]
-        public async Task<IActionResult> RemoveMember(int memberId)
+        catch (Exception ex)
         {
-            try
-            {
-                var result = await _memberService.DeleteMemberAsync(memberId);
-                if (!result)
-                    return NotFound($"Member with ID {memberId} not found");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
-                return NoContent();
-            }
-            catch (Exception ex)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteGroup(int id)
+    {
+        try
+        {
+            var result = await _groupService.DeleteGroupAsync(id);
+            if (!result)
+                return NotFound($"Group with ID {id} not found");
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpGet("{id}/members")]
+    public async Task<ActionResult<IEnumerable<MemberResponseDto>>> GetGroupMembers(int id)
+    {
+        try
+        {
+            var members = await _memberService.GetMembersByGroupIdAsync(id);
+            var result = members.Select(m => new MemberResponseDto
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+                MembersId = m.MembersId,
+                GroupId = m.GroupId,
+                UserId = m.UserId,
+                UserName = m.User?.Username ?? "",
+                UserEmail = m.User?.Email ?? "",
+                UserFullName = m.User?.Name + " " + m.User?.Lastname,
+                CreatedAt = m.CreatedAt,
+                CreatedByUserName = m.CreatedByUser?.Name + " " + m.CreatedByUser?.Lastname
+            });
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpPost("{id}/members")]
+    public async Task<IActionResult> AddMember(int id, MemberCreateDto memberDto)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized("User ID not found in token");
+
+            var member = new Models.Member
+            {
+                GroupId = id,
+                UserId = memberDto.UserId
+            };
+
+            var createdMember = await _memberService.CreateMemberAsync(member, userId);
+            return CreatedAtAction(nameof(GetGroupMembers), new { id = createdMember.GroupId }, createdMember);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpDelete("members/{memberId}")]
+    public async Task<IActionResult> RemoveMember(int memberId)
+    {
+        try
+        {
+            var result = await _memberService.DeleteMemberAsync(memberId);
+            if (!result)
+                return NotFound($"Member with ID {memberId} not found");
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 }

@@ -858,14 +858,11 @@ SCH-KPRU/
 ├── 🐳 Makefile                   # Docker management commands
 ├── ⚙️ .env.prod                  # Production environment template
 ├── 🗄️ init-db.sql               # Database initialization
-├── 🌐 nginx/
-│   └── 📄 nginx.conf            # Reverse proxy configuration
 ├── ⚙️ backend/SchKpruApi/
 │   ├── 🐳 Dockerfile            # Backend container
 │   └── 📄 .dockerignore         # Backend build ignore
 └── 🎨 frontend/
     ├── 🐳 Dockerfile            # Frontend container
-    ├── 📄 nginx.conf            # Frontend nginx config
     └── 📄 .dockerignore         # Frontend build ignore
 ```
 

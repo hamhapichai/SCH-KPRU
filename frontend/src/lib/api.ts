@@ -381,6 +381,26 @@ export const complaintApi = {
     return response.data;
   },
 
+  // Download attachment (returns blob URL)
+  getAttachmentDownloadUrl: (complaintId: number, attachmentId: number): string => {
+    return `/api/admin/Complaints/${complaintId}/attachments/${attachmentId}/download`;
+  },
+
+  downloadAttachment: async (complaintId: number, attachmentId: number, fileName: string): Promise<void> => {
+    const response = await apiClient.get(
+      `/admin/Complaints/${complaintId}/attachments/${attachmentId}/download`,
+      { responseType: 'blob' }
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // Dashboard operations
   getDashboardStats: async (): Promise<any> => {
     const response = await apiClient.get('/admin/Complaints/dashboard/stats');
@@ -459,6 +479,14 @@ export const aiSuggestionApi = {
   getAllAISuggestions: async (): Promise<any[]> => {
     const response = await apiClient.get('/admin/AISuggestions');
     return response.data;
+  },
+};
+
+export const aiToolsApi = {
+  // Rewrite text to formal Thai language via n8n + AI
+  rewriteFormal: async (text: string): Promise<string> => {
+    const response = await apiClient.post('/ai/rewrite-formal', { text });
+    return response.data.result;
   },
 };
 

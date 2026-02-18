@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FileText, User, Mail, Phone, Send } from 'lucide-react';
+import { FileText, User, Mail, Phone, Send, Paperclip, X, Image, Film, File } from 'lucide-react';
 import { Button, Input, Textarea, Card, CardHeader, CardTitle, CardContent, Alert } from '@/components/ui';
 import apiClient from '@/lib/api';
 
@@ -11,9 +11,10 @@ const complaintSchema = z.object({
   subject: z.string().min(10, 'หัวข้อต้องมีอย่างน้อย 10 ตัวอักษร'),
   message: z.string().min(20, 'รายละเอียดต้องมีอย่างน้อย 20 ตัวอักษร'),
   contactName: z.string().optional(),
-  contactEmail: z.string().email('รูปแบบอีเมลไม่ถูกต้อง').optional().or(z.literal('')),
+  contactEmail: z.email('รูปแบบอีเมลไม่ถูกต้อง').optional().or(z.literal('')),
   contactPhone: z.string().optional(),
   isAnonymous: z.boolean(),
+  isUrgent: z.boolean(),
 });
 
 type ComplaintFormData = z.infer<typeof complaintSchema>;
@@ -27,28 +28,80 @@ const CreateComplaintPage = () => {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm<ComplaintFormData>({
     resolver: zodResolver(complaintSchema),
     defaultValues: {
       isAnonymous: false,
+      isUrgent: false,
     },
   });
 
+  // router.query is empty on first render; wait until router is ready
+  React.useEffect(() => {
+    if (router.isReady) {
+      reset((prev) => ({ ...prev, isUrgent: router.query.urgent === 'true' }));
+    }
+  }, [router.isReady, router.query.urgent, reset]);
+
   const isAnonymous = watch('isAnonymous');
+  const isUrgentValue = watch('isUrgent');
+
+  const [attachedFiles, setAttachedFiles] = React.useState<File[]>([]);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const ACCEPTED_TYPES = ['image/*', 'video/*', 'application/pdf', '.doc', '.docx', '.xls', '.xlsx'];
+  const MAX_FILE_SIZE_MB = 20;
+
+  const addFiles = (incoming: FileList | null) => {
+    if (!incoming) return;
+    const valid = Array.from(incoming).filter((f) => {
+      if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false;
+      return true;
+    });
+    setAttachedFiles((prev) => {
+      const existing = new Set(prev.map((f) => f.name + f.size));
+      return [...prev, ...valid.filter((f) => !existing.has(f.name + f.size))];
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <Image className="h-4 w-4 text-blue-500" />;
+    if (file.type.startsWith('video/')) return <Film className="h-4 w-4 text-purple-500" />;
+    return <File className="h-4 w-4 text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const onSubmit = async (data: ComplaintFormData) => {
     try {
       setIsSubmitting(true);
       setError(null);
 
-      const response = await apiClient.post('/complaints', {
-        subject: data.subject,
-        message: data.message,
-        contactName: data.isAnonymous ? null : data.contactName,
-        contactEmail: data.isAnonymous ? null : data.contactEmail,
-        contactPhone: data.isAnonymous ? null : data.contactPhone,
-        isAnonymous: data.isAnonymous,
+      const formData = new FormData();
+      formData.append('subject', data.subject);
+      formData.append('message', data.message);
+      formData.append('isAnonymous', String(data.isAnonymous));
+      formData.append('urgent', String(data.isUrgent));
+      if (!data.isAnonymous) {
+        if (data.contactName) formData.append('contactName', data.contactName);
+        if (data.contactEmail) formData.append('contactEmail', data.contactEmail);
+        if (data.contactPhone) formData.append('contactPhone', data.contactPhone);
+      }
+      attachedFiles.forEach((file) => formData.append('files', file));
+
+      const response = await apiClient.post('/complaints', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       const { ticketId, complaintId } = response.data;
@@ -162,6 +215,9 @@ const CreateComplaintPage = () => {
                 </Alert>
               )}
 
+              {/* Hidden urgent field */}
+              <input type="hidden" {...register('isUrgent')} />
+
               {/* Anonymous Option */}
               <div className="flex items-center space-x-3">
                 <input
@@ -228,6 +284,65 @@ const CreateComplaintPage = () => {
                 />
               </div>
 
+              {/* File Attachment */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-heading">แนบไฟล์ (ถ้ามี)</h3>
+
+                {/* Drop zone */}
+                <div
+                  className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+                    isDragging
+                      ? 'border-primary bg-primary/5'
+                      : 'border-stroke bg-gray-1 hover:border-primary/50 hover:bg-primary/5'
+                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    className="hidden"
+                    onChange={(e) => addFiles(e.target.files)}
+                  />
+                  <Paperclip className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+                  <p className="text-sm font-medium text-heading">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่</p>
+                  <p className="mt-1 text-xs text-body-color">
+                    รูปภาพ, วิดีโอ, PDF, Word, Excel — สูงสุด {MAX_FILE_SIZE_MB} MB ต่อไฟล์
+                  </p>
+                </div>
+
+                {/* File list */}
+                {attachedFiles.length > 0 && (
+                  <ul className="space-y-2">
+                    {attachedFiles.map((file, index) => (
+                      <li
+                        key={index}
+                        className="flex items-center justify-between rounded-lg border border-stroke bg-white px-4 py-2"
+                      >
+                        <div className="flex min-w-0 items-center space-x-3">
+                          {getFileIcon(file)}
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-heading">{file.name}</p>
+                            <p className="text-xs text-body-color">{formatFileSize(file.size)}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="ml-3 flex-shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               {/* Info Box */}
               <div className="rounded-lg bg-gray-1 border border-stroke p-4">
                 <div className="flex">
@@ -242,7 +357,7 @@ const CreateComplaintPage = () => {
                       <ul className="list-disc space-y-1 pl-5">
                         <li>เมื่อส่งข้อร้องเรียนแล้ว ท่านจะได้รับ Ticket ID สำหรับติดตามสถานะ</li>
                         <li>ระบบจะดำเนินการตรวจสอบและประสานงานกับหน่วยงานที่เกี่ยวข้อง</li>
-                        <li>หากต้องการความช่วยเหลือเร่งด่วน กรุณาติดต่อหน่วยงานโดยตรง</li>
+                        {/* <li>หากต้องการความช่วยเหลือเร่งด่วน กรุณาติดต่อหน่วยงานโดยตรง</li> */}
                       </ul>
                     </div>
                   </div>

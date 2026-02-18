@@ -1,26 +1,25 @@
-using Microsoft.Extensions.Hosting;
+using SchKpruApi.Services.Interfaces;
 
-namespace SchKpruApi.Services
+namespace SchKpruApi.Services;
+
+public class WebhookQueueBackgroundService : BackgroundService
 {
-    public class WebhookQueueBackgroundService : BackgroundService
+    private readonly IWebhookQueueService _webhookQueueService;
+    private readonly ILogger<WebhookQueueBackgroundService> _logger;
+
+    public WebhookQueueBackgroundService(
+        IWebhookQueueService webhookQueueService,
+        ILogger<WebhookQueueBackgroundService> logger)
     {
-        private readonly IWebhookQueueService _webhookQueueService;
-        private readonly ILogger<WebhookQueueBackgroundService> _logger;
+        _webhookQueueService = webhookQueueService;
+        _logger = logger;
+    }
 
-        public WebhookQueueBackgroundService(
-            IWebhookQueueService webhookQueueService,
-            ILogger<WebhookQueueBackgroundService> logger)
-        {
-            _webhookQueueService = webhookQueueService;
-            _logger = logger;
-        }
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Webhook Queue Background Service started");
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            _logger.LogInformation("Webhook Queue Background Service started");
-
-            // Start processing the queue
-            await _webhookQueueService.ProcessQueueAsync(stoppingToken);
-        }
+        // Start processing the queue
+        await _webhookQueueService.ProcessQueueAsync(stoppingToken);
     }
 }

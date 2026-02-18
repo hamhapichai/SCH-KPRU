@@ -1,219 +1,218 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchKpruApi.Models;
-using SchKpruApi.Services;
 using SchKpruApi.DTOs;
-using System.Security.Claims;
+using SchKpruApi.Services.Interfaces;
 
-namespace SchKpruApi.Controllers
+namespace SchKpruApi.Controllers;
+
+[ApiController]
+[Route("api/admin/[controller]")]
+[Authorize]
+public class DepartmentsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/admin/[controller]")]
-    [Authorize]
-    public class DepartmentsController : ControllerBase
+    private readonly IDepartmentService _departmentService;
+
+    public DepartmentsController(IDepartmentService departmentService)
     {
-        private readonly IDepartmentService _departmentService;
+        _departmentService = departmentService;
+    }
 
-        public DepartmentsController(IDepartmentService departmentService)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetAllDepartments()
+    {
+        try
         {
-            _departmentService = departmentService;
+            var departments = await _departmentService.GetAllDepartmentsAsync();
+            return Ok(departments);
         }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetAllDepartments()
+        catch (Exception ex)
         {
-            try
-            {
-                var departments = await _departmentService.GetAllDepartmentsAsync();
-                return Ok(departments);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<DepartmentDto>> GetDepartment(int id)
-        {
-            try
-            {
-                var department = await _departmentService.GetDepartmentByIdAsync(id);
-                if (department == null)
-                    return NotFound($"Department with ID {id} not found");
-
-                return Ok(department);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("active")]
-        public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetActiveDepartments()
-        {
-            try
-            {
-                var departments = await _departmentService.GetActiveDepartmentsAsync();
-                return Ok(departments);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Department>> CreateDepartment([FromBody] Department department)
-        {
-            try
-            {
-                var currentUserIdClaim = User.FindFirst("UserId")?.Value;
-                if (!int.TryParse(currentUserIdClaim, out int currentUserId))
-                    return Unauthorized();
-
-                var createdDepartment = await _departmentService.CreateDepartmentAsync(department, currentUserId);
-                return CreatedAtAction(nameof(GetDepartment), new { id = createdDepartment.DepartmentId }, createdDepartment);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Department>> UpdateDepartment(int id, [FromBody] Department department)
-        {
-            try
-            {
-                var currentUserIdClaim = User.FindFirst("UserId")?.Value;
-                if (!int.TryParse(currentUserIdClaim, out int currentUserId))
-                    return Unauthorized();
-
-                var updatedDepartment = await _departmentService.UpdateDepartmentAsync(id, department, currentUserId);
-                if (updatedDepartment == null)
-                    return NotFound($"Department with ID {id} not found");
-
-                return Ok(updatedDepartment);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteDepartment(int id)
-        {
-            try
-            {
-                var currentUserIdClaim = User.FindFirst("UserId")?.Value;
-                if (!int.TryParse(currentUserIdClaim, out int currentUserId))
-                    return Unauthorized();
-
-                var result = await _departmentService.DeleteDepartmentAsync(id, currentUserId);
-                if (!result)
-                    return NotFound($"Department with ID {id} not found");
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 
-    [ApiController]
-    [Route("api/admin/[controller]")]
-    [Authorize]
-    public class RolesController : ControllerBase
+    [HttpGet("{id}")]
+    public async Task<ActionResult<DepartmentDto>> GetDepartment(int id)
     {
-        private readonly IRoleService _roleService;
-
-        public RolesController(IRoleService roleService)
+        try
         {
-            _roleService = roleService;
+            var department = await _departmentService.GetDepartmentByIdAsync(id);
+            if (department == null)
+                return NotFound($"Department with ID {id} not found");
+
+            return Ok(department);
         }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Role>>> GetAllRoles()
+        catch (Exception ex)
         {
-            try
-            {
-                var roles = await _roleService.GetAllRolesAsync();
-                return Ok(roles);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(int id)
+    [HttpGet("active")]
+    public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetActiveDepartments()
+    {
+        try
         {
-            try
-            {
-                var role = await _roleService.GetRoleByIdAsync(id);
-                if (role == null)
-                    return NotFound($"Role with ID {id} not found");
-
-                return Ok(role);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var departments = await _departmentService.GetActiveDepartmentsAsync();
+            return Ok(departments);
         }
-
-        [HttpPost]
-        public async Task<ActionResult<Role>> CreateRole([FromBody] Role role)
+        catch (Exception ex)
         {
-            try
-            {
-                var createdRole = await _roleService.CreateRoleAsync(role);
-                return CreatedAtAction(nameof(GetRole), new { id = createdRole.RoleId }, createdRole);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<Role>> UpdateRole(int id, [FromBody] Role role)
+    [HttpPost]
+    public async Task<ActionResult<Department>> CreateDepartment([FromBody] Department department)
+    {
+        try
         {
-            try
-            {
-                var updatedRole = await _roleService.UpdateRoleAsync(id, role);
-                if (updatedRole == null)
-                    return NotFound($"Role with ID {id} not found");
+            var currentUserIdClaim = User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(currentUserIdClaim, out var currentUserId))
+                return Unauthorized();
 
-                return Ok(updatedRole);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var createdDepartment = await _departmentService.CreateDepartmentAsync(department, currentUserId);
+            return CreatedAtAction(nameof(GetDepartment), new { id = createdDepartment.DepartmentId },
+                createdDepartment);
         }
-
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteRole(int id)
+        catch (Exception ex)
         {
-            try
-            {
-                var result = await _roleService.DeleteRoleAsync(id);
-                if (!result)
-                    return NotFound($"Role with ID {id} not found");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Department>> UpdateDepartment(int id, [FromBody] Department department)
+    {
+        try
+        {
+            var currentUserIdClaim = User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(currentUserIdClaim, out var currentUserId))
+                return Unauthorized();
+
+            var updatedDepartment = await _departmentService.UpdateDepartmentAsync(id, department, currentUserId);
+            if (updatedDepartment == null)
+                return NotFound($"Department with ID {id} not found");
+
+            return Ok(updatedDepartment);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteDepartment(int id)
+    {
+        try
+        {
+            var currentUserIdClaim = User.FindFirst("UserId")?.Value;
+            if (!int.TryParse(currentUserIdClaim, out var currentUserId))
+                return Unauthorized();
+
+            var result = await _departmentService.DeleteDepartmentAsync(id, currentUserId);
+            if (!result)
+                return NotFound($"Department with ID {id} not found");
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+}
+
+[ApiController]
+[Route("api/admin/[controller]")]
+[Authorize]
+public class RolesController : ControllerBase
+{
+    private readonly IRoleService _roleService;
+
+    public RolesController(IRoleService roleService)
+    {
+        _roleService = roleService;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Role>>> GetAllRoles()
+    {
+        try
+        {
+            var roles = await _roleService.GetAllRolesAsync();
+            return Ok(roles);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Role>> GetRole(int id)
+    {
+        try
+        {
+            var role = await _roleService.GetRoleByIdAsync(id);
+            if (role == null)
+                return NotFound($"Role with ID {id} not found");
+
+            return Ok(role);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Role>> CreateRole([FromBody] Role role)
+    {
+        try
+        {
+            var createdRole = await _roleService.CreateRoleAsync(role);
+            return CreatedAtAction(nameof(GetRole), new { id = createdRole.RoleId }, createdRole);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Role>> UpdateRole(int id, [FromBody] Role role)
+    {
+        try
+        {
+            var updatedRole = await _roleService.UpdateRoleAsync(id, role);
+            if (updatedRole == null)
+                return NotFound($"Role with ID {id} not found");
+
+            return Ok(updatedRole);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteRole(int id)
+    {
+        try
+        {
+            var result = await _roleService.DeleteRoleAsync(id);
+            if (!result)
+                return NotFound($"Role with ID {id} not found");
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 }

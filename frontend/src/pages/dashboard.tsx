@@ -285,8 +285,16 @@ const DashboardPage = () => {
                     className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
                     onClick={() => router.push(`/complaints/${complaint.complaintId}/edit`)}
                   >
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{complaint.subject}</h4>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h4 className="font-medium text-gray-900">{complaint.subject}</h4>
+                        {complaint.urgent && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200 shrink-0">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                            เรื่องด่วน
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600">{complaint.departmentName || 'ไม่ระบุหน่วยงาน'}</p>
                     </div>
                     <div className="flex items-center space-x-3">

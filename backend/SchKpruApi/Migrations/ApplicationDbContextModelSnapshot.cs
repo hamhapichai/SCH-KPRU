@@ -125,6 +125,10 @@ namespace SchKpruApi.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("updated_by_user_id");
 
+                    b.Property<bool?>("Urgent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("urgent");
+
                     b.HasKey("ComplaintId");
 
                     b.HasIndex("TicketId")
@@ -216,6 +220,59 @@ namespace SchKpruApi.Migrations
                     b.HasIndex("UpdatedByUserId");
 
                     b.ToTable("complaint_assignments");
+                });
+
+            modelBuilder.Entity("SchKpruApi.Models.ComplaintAttachment", b =>
+                {
+                    b.Property<int>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("attachment_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AttachmentId"));
+
+                    b.Property<int>("ComplaintId")
+                        .HasColumnType("integer")
+                        .HasColumnName("complaint_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_size");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("original_file_name");
+
+                    b.Property<string>("S3Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("s3_key");
+
+                    b.Property<string>("S3Url")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("s3_url");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex("ComplaintId");
+
+                    b.ToTable("complaint_attachments");
                 });
 
             modelBuilder.Entity("SchKpruApi.Models.ComplaintLog", b =>
@@ -617,6 +674,17 @@ namespace SchKpruApi.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
+            modelBuilder.Entity("SchKpruApi.Models.ComplaintAttachment", b =>
+                {
+                    b.HasOne("SchKpruApi.Models.Complaint", "Complaint")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ComplaintId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Complaint");
+                });
+
             modelBuilder.Entity("SchKpruApi.Models.ComplaintLog", b =>
                 {
                     b.HasOne("SchKpruApi.Models.Complaint", "Complaint")
@@ -756,6 +824,8 @@ namespace SchKpruApi.Migrations
             modelBuilder.Entity("SchKpruApi.Models.Complaint", b =>
                 {
                     b.Navigation("AISuggestions");
+
+                    b.Navigation("Attachments");
 
                     b.Navigation("ComplaintAssignments");
 

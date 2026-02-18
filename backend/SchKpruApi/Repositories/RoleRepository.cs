@@ -1,16 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using SchKpruApi.Data;
 using SchKpruApi.Models;
+using SchKpruApi.Repositories.Interfaces;
 
-namespace SchKpruApi.Repositories
+namespace SchKpruApi.Repositories;
+
+public class RoleRepository : GenericRepository<Role>, IRoleRepository
 {
-    public class RoleRepository : GenericRepository<Role>, IRoleRepository
+    public RoleRepository(ApplicationDbContext context) : base(context)
     {
-        public RoleRepository(ApplicationDbContext context) : base(context) { }
+    }
 
-        public async Task<Role?> GetByNameAsync(string roleName)
-        {
-            return await _dbSet.FirstOrDefaultAsync(r => r.RoleName == roleName);
-        }
+    public async Task<Role?> GetByNameAsync(string roleName)
+    {
+        return await _dbSet.FirstOrDefaultAsync(r => r.RoleName == roleName);
     }
 }
