@@ -8,12 +8,12 @@ namespace SchKpruApi.Services;
 public class ComplaintService : IComplaintService
 {
     private readonly IComplaintRepository _complaintRepository;
-    private readonly IUserRepository _userRepository;
     private readonly IDepartmentRepository _departmentRepository;
-    private readonly IMemberRepository _memberRepository;
     private readonly IGroupRepository _groupRepository;
-    private readonly IWebhookService _webhookService;
+    private readonly IMemberRepository _memberRepository;
     private readonly IStorageService _storageService;
+    private readonly IUserRepository _userRepository;
+    private readonly IWebhookService _webhookService;
 
     public ComplaintService(IComplaintRepository complaintRepository, IUserRepository userRepository,
         IDepartmentRepository departmentRepository, IMemberRepository memberRepository,
@@ -163,37 +163,6 @@ public class ComplaintService : IComplaintService
         return (complaints.Select(MapToResponseDto), totalCount);
     }
 
-    private static ComplaintResponseDto MapToResponseDto(Complaint complaint)
-    {
-        return new ComplaintResponseDto
-        {
-            ComplaintId = complaint.ComplaintId,
-            ContactName = complaint.ContactName,
-            ContactEmail = complaint.ContactEmail,
-            ContactPhone = complaint.ContactPhone,
-            Subject = complaint.Subject,
-            Message = complaint.Message,
-            SubmissionDate = complaint.SubmissionDate,
-            CurrentStatus = complaint.CurrentStatus,
-            IsAnonymous = complaint.IsAnonymous,
-            TicketId = complaint.TicketId,
-            UpdatedAt = complaint.UpdatedAt,
-            Urgent = complaint.Urgent,
-            UpdatedByUserName = complaint.UpdatedByUser != null
-                ? $"{complaint.UpdatedByUser.Name} {complaint.UpdatedByUser.Lastname}"
-                : null,
-            Attachments = complaint.Attachments.Select(a => new ComplaintAttachmentDto
-            {
-                AttachmentId = a.AttachmentId,
-                OriginalFileName = a.OriginalFileName,
-                S3Url = a.S3Url,
-                ContentType = a.ContentType,
-                FileSize = a.FileSize,
-                UploadedAt = a.UploadedAt
-            }).ToList()
-        };
-    }
-
     // Public methods for non-authenticated access
     public async Task<ComplaintResponseDto?> GetByTicketIdAsync(string ticketId)
     {
@@ -316,54 +285,6 @@ public class ComplaintService : IComplaintService
     {
         var logs = await _complaintRepository.GetLogsByComplaintIdAsync(complaintId);
         return logs.Select(MapLogToResponseDto);
-    }
-
-    // Helper methods for mapping
-    private ComplaintAssignmentResponseDto MapAssignmentToResponseDto(ComplaintAssignment assignment)
-    {
-        return new ComplaintAssignmentResponseDto
-        {
-            AssignmentId = assignment.AssignmentId,
-            ComplaintId = assignment.ComplaintId,
-            ComplaintSubject = assignment.Complaint?.Subject ?? "",
-            AssignedByUserId = assignment.AssignedByUserId,
-            AssignedByUserName = assignment.AssignedByUser?.Name + " " + assignment.AssignedByUser?.Lastname ?? "",
-            AssignedToDeptId = assignment.AssignedToDeptId,
-            AssignedToDeptName = assignment.AssignedToDepartment?.DepartmentName,
-            AssignedToGroupId = assignment.AssignedToGroupId,
-            AssignedToGroupName = assignment.AssignedToGroup?.Name,
-            AssignedToUserId = assignment.AssignedToUserId,
-            AssignedToUserName = assignment.AssignedToUser?.Name + " " + assignment.AssignedToUser?.Lastname,
-            TargetDate = assignment.TargetDate,
-            Status = assignment.Status,
-            AssignedDate = assignment.AssignedDate,
-            ReceivedDate = assignment.ReceivedDate,
-            CompletedDate = assignment.CompletedDate,
-            ClosedDate = assignment.ClosedDate,
-            IsActive = assignment.IsActive
-        };
-    }
-
-    private ComplaintLogResponseDto MapLogToResponseDto(ComplaintLog log)
-    {
-        return new ComplaintLogResponseDto
-        {
-            LogId = log.LogId,
-            ComplaintId = log.ComplaintId,
-            UserId = log.UserId,
-            UserName = log.User?.Name + " " + log.User?.Lastname,
-            DepartmentId = log.DepartmentId,
-            DepartmentName = log.Department?.DepartmentName,
-            Action = log.Action,
-            Notes = log.Notes,
-            PreviousStatus = log.PreviousStatus,
-            NewStatus = log.NewStatus,
-            Timestamp = log.Timestamp,
-            Metadata = log.Metadata,
-            RelatedAssignmentId = log.RelatedAssignmentId,
-            CreatedByUserId = log.CreatedByUserId,
-            CreatedByUserName = log.CreatedByUser?.Name + " " + log.CreatedByUser?.Lastname
-        };
     }
 
     // Dashboard methods
@@ -515,5 +436,84 @@ public class ComplaintService : IComplaintService
 
         var stream = await _storageService.DownloadFileAsync(attachment.S3Key);
         return (stream, attachment.ContentType, attachment.OriginalFileName);
+    }
+
+    private static ComplaintResponseDto MapToResponseDto(Complaint complaint)
+    {
+        return new ComplaintResponseDto
+        {
+            ComplaintId = complaint.ComplaintId,
+            ContactName = complaint.ContactName,
+            ContactEmail = complaint.ContactEmail,
+            ContactPhone = complaint.ContactPhone,
+            Subject = complaint.Subject,
+            Message = complaint.Message,
+            SubmissionDate = complaint.SubmissionDate,
+            CurrentStatus = complaint.CurrentStatus,
+            IsAnonymous = complaint.IsAnonymous,
+            TicketId = complaint.TicketId,
+            UpdatedAt = complaint.UpdatedAt,
+            Urgent = complaint.Urgent,
+            UpdatedByUserName = complaint.UpdatedByUser != null
+                ? $"{complaint.UpdatedByUser.Name} {complaint.UpdatedByUser.Lastname}"
+                : null,
+            Attachments = complaint.Attachments.Select(a => new ComplaintAttachmentDto
+            {
+                AttachmentId = a.AttachmentId,
+                OriginalFileName = a.OriginalFileName,
+                S3Url = a.S3Url,
+                ContentType = a.ContentType,
+                FileSize = a.FileSize,
+                UploadedAt = a.UploadedAt
+            }).ToList()
+        };
+    }
+
+    // Helper methods for mapping
+    private ComplaintAssignmentResponseDto MapAssignmentToResponseDto(ComplaintAssignment assignment)
+    {
+        return new ComplaintAssignmentResponseDto
+        {
+            AssignmentId = assignment.AssignmentId,
+            ComplaintId = assignment.ComplaintId,
+            ComplaintSubject = assignment.Complaint?.Subject ?? "",
+            AssignedByUserId = assignment.AssignedByUserId,
+            AssignedByUserName = assignment.AssignedByUser?.Name + " " + assignment.AssignedByUser?.Lastname ?? "",
+            AssignedToDeptId = assignment.AssignedToDeptId,
+            AssignedToDeptName = assignment.AssignedToDepartment?.DepartmentName,
+            AssignedToGroupId = assignment.AssignedToGroupId,
+            AssignedToGroupName = assignment.AssignedToGroup?.Name,
+            AssignedToUserId = assignment.AssignedToUserId,
+            AssignedToUserName = assignment.AssignedToUser?.Name + " " + assignment.AssignedToUser?.Lastname,
+            TargetDate = assignment.TargetDate,
+            Status = assignment.Status,
+            AssignedDate = assignment.AssignedDate,
+            ReceivedDate = assignment.ReceivedDate,
+            CompletedDate = assignment.CompletedDate,
+            ClosedDate = assignment.ClosedDate,
+            IsActive = assignment.IsActive
+        };
+    }
+
+    private ComplaintLogResponseDto MapLogToResponseDto(ComplaintLog log)
+    {
+        return new ComplaintLogResponseDto
+        {
+            LogId = log.LogId,
+            ComplaintId = log.ComplaintId,
+            UserId = log.UserId,
+            UserName = log.User?.Name + " " + log.User?.Lastname,
+            DepartmentId = log.DepartmentId,
+            DepartmentName = log.Department?.DepartmentName,
+            Action = log.Action,
+            Notes = log.Notes,
+            PreviousStatus = log.PreviousStatus,
+            NewStatus = log.NewStatus,
+            Timestamp = log.Timestamp,
+            Metadata = log.Metadata,
+            RelatedAssignmentId = log.RelatedAssignmentId,
+            CreatedByUserId = log.CreatedByUserId,
+            CreatedByUserName = log.CreatedByUser?.Name + " " + log.CreatedByUser?.Lastname
+        };
     }
 }

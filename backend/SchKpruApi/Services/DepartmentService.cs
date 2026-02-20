@@ -1,5 +1,5 @@
-using SchKpruApi.Models;
 using SchKpruApi.DTOs;
+using SchKpruApi.Models;
 using SchKpruApi.Repositories.Interfaces;
 using SchKpruApi.Services.Interfaces;
 

@@ -1,7 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchKpruApi.DTOs;
-using System.Security.Claims;
+using SchKpruApi.Models;
 using SchKpruApi.Services.Interfaces;
 
 namespace SchKpruApi.Controllers;
@@ -117,7 +118,7 @@ public class GroupsController : ControllerBase
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized("User ID not found in token");
 
-            var group = new Models.Group
+            var group = new Group
             {
                 DepartmentId = groupDto.DepartmentId,
                 Name = groupDto.Name,
@@ -159,7 +160,7 @@ public class GroupsController : ControllerBase
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized("User ID not found in token");
 
-            var group = new Models.Group
+            var group = new Group
             {
                 Name = groupDto.Name,
                 Description = groupDto.Description,
@@ -229,7 +230,7 @@ public class GroupsController : ControllerBase
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized("User ID not found in token");
 
-            var member = new Models.Member
+            var member = new Member
             {
                 GroupId = id,
                 UserId = memberDto.UserId

@@ -1,21 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using SchKpruApi.Data;
+using SchKpruApi.Models;
 using SchKpruApi.Services.Interfaces;
 
 namespace SchKpruApi.Services;
 
 /// <summary>
-/// Background service ที่รันทุกวันเวลา 09:00 น. (เวลาประเทศไทย UTC+7)
-/// เพื่อตรวจสอบเรื่องร้องเรียนที่ครบกำหนด (target_date) และยังไม่ Completed
-/// แล้วส่ง email แจ้งเตือนไปยังผู้ที่ถูก Assign ล่าสุด
+///     Background service ที่รันทุกวันเวลา 09:00 น. (เวลาประเทศไทย UTC+7)
+///     เพื่อตรวจสอบเรื่องร้องเรียนที่ครบกำหนด (target_date) และยังไม่ Completed
+///     แล้วส่ง email แจ้งเตือนไปยังผู้ที่ถูก Assign ล่าสุด
 /// </summary>
 public class DeadlineReminderBackgroundService : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<DeadlineReminderBackgroundService> _logger;
-
     // Bangkok timezone (UTC+7) — cross-platform support
     private static readonly TimeZoneInfo BangkokTz = GetBangkokTimeZone();
+    private readonly ILogger<DeadlineReminderBackgroundService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public DeadlineReminderBackgroundService(
         IServiceScopeFactory scopeFactory,
@@ -45,10 +45,7 @@ public class DeadlineReminderBackgroundService : BackgroundService
                 break;
             }
 
-            if (!stoppingToken.IsCancellationRequested)
-            {
-                await SendDeadlineRemindersAsync();
-            }
+            if (!stoppingToken.IsCancellationRequested) await SendDeadlineRemindersAsync();
         }
 
         _logger.LogInformation("DeadlineReminderBackgroundService stopping");
@@ -121,7 +118,6 @@ public class DeadlineReminderBackgroundService : BackgroundService
             }
 
             foreach (var (email, name) in recipients)
-            {
                 try
                 {
                     await mailService.SendDeadlineReminderAsync(
@@ -140,7 +136,6 @@ public class DeadlineReminderBackgroundService : BackgroundService
                         "DeadlineReminder: failed to send email to {Email} for complaint {ComplaintId}",
                         email, complaint.ComplaintId);
                 }
-            }
         }
     }
 
@@ -149,7 +144,7 @@ public class DeadlineReminderBackgroundService : BackgroundService
     // ────────────────────────────────────────────────────────────────────────────
 
     private static async Task<List<(string Email, string Name)>> GetRecipientsAsync(
-        ApplicationDbContext db, Models.ComplaintAssignment assignment)
+        ApplicationDbContext db, ComplaintAssignment assignment)
     {
         var result = new List<(string Email, string Name)>();
 
@@ -209,7 +204,13 @@ public class DeadlineReminderBackgroundService : BackgroundService
     private static TimeZoneInfo GetBangkokTimeZone()
     {
         // Windows: "SE Asia Standard Time" | Linux/macOS: "Asia/Bangkok"
-        try { return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"); }
-        catch { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Bangkok"); }
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
+        catch
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Bangkok");
+        }
     }
 }

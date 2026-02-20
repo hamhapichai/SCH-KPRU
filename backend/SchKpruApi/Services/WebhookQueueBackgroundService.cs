@@ -4,8 +4,8 @@ namespace SchKpruApi.Services;
 
 public class WebhookQueueBackgroundService : BackgroundService
 {
-    private readonly IWebhookQueueService _webhookQueueService;
     private readonly ILogger<WebhookQueueBackgroundService> _logger;
+    private readonly IWebhookQueueService _webhookQueueService;
 
     public WebhookQueueBackgroundService(
         IWebhookQueueService webhookQueueService,

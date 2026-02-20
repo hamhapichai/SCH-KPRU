@@ -51,5 +51,7 @@ public interface IComplaintService
 
     // Attachment methods
     Task<List<ComplaintAttachmentDto>> UploadAttachmentsAsync(int complaintId, IList<IFormFile> files);
-    Task<(Stream stream, string contentType, string fileName)?> DownloadAttachmentAsync(int complaintId, int attachmentId);
+
+    Task<(Stream stream, string contentType, string fileName)?> DownloadAttachmentAsync(int complaintId,
+        int attachmentId);
 }

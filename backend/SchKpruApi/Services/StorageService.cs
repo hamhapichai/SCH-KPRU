@@ -6,8 +6,8 @@ namespace SchKpruApi.Services;
 
 public class StorageService : IStorageService
 {
-    private readonly IAmazonS3 _s3Client;
     private readonly string _bucketName;
+    private readonly IAmazonS3 _s3Client;
 
     public StorageService(IAmazonS3 s3Client, IConfiguration configuration)
     {

@@ -103,20 +103,18 @@ public class HealthController : ControllerBase
                 {
                     status = "healthy",
                     canConnect = true,
-                    userCount = userCount,
+                    userCount,
                     connectionString =
                         _context.Database.GetConnectionString()?.Split(';')[0] // Only show server info
                 };
             }
-            else
+
+            return new
             {
-                return new
-                {
-                    status = "unhealthy",
-                    canConnect = false,
-                    error = "Cannot connect to database"
-                };
-            }
+                status = "unhealthy",
+                canConnect = false,
+                error = "Cannot connect to database"
+            };
         }
         catch (Exception ex)
         {

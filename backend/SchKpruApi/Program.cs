@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SchKpruApi.Data;
 using SchKpruApi.Options;
 using SchKpruApi.Repositories;
-using SchKpruApi.Services.Interfaces;
-using SchKpruApi.Services;
-using Amazon.S3;
-using Amazon.Extensions.NETCore.Setup;
 using SchKpruApi.Repositories.Interfaces;
+using SchKpruApi.Services;
+using SchKpruApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,10 +100,7 @@ builder.Services.AddHostedService<DeadlineReminderBackgroundService>();
 
 // Register HttpClient
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient("n8n", client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
+builder.Services.AddHttpClient("n8n", client => { client.Timeout = TimeSpan.FromSeconds(30); });
 
 // Configure WebhookOptions
 builder.Services.Configure<WebhookOptions>(builder.Configuration.GetSection("WebhookOptions"));

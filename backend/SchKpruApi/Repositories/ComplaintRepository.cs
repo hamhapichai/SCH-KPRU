@@ -113,13 +113,13 @@ public class ComplaintRepository : GenericRepository<Complaint>, IComplaintRepos
             return await query
                 .OrderByDescending(c => c.SubmissionDate)
                 .ToListAsync();
-        else if (roleName == "Deputy" && departmentId.HasValue)
+        if (roleName == "Deputy" && departmentId.HasValue)
             // Deputy เห็นเฉพาะที่ assign ให้ department ของตัวเอง
             return await query
                 .Where(c => c.ComplaintAssignments.Any(ca => ca.AssignedToDeptId == departmentId.Value))
                 .OrderByDescending(c => c.SubmissionDate)
                 .ToListAsync();
-        else if (roleName == "Staff" && groupId.HasValue)
+        if (roleName == "Staff" && groupId.HasValue)
             // Staff เห็นเฉพาะที่ assign ให้ group ของตัวเอง
             return await query
                 .Where(c => c.ComplaintAssignments.Any(ca => ca.AssignedToGroupId == groupId.Value))

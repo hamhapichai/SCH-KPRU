@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using System.Text.Json;
 using SchKpruApi.Services.Interfaces;
 
@@ -9,15 +10,15 @@ public class WebhookJob
     public string Url { get; set; } = string.Empty;
     public object Payload { get; set; } = new();
     public DateTime QueuedAt { get; set; } = DateTime.UtcNow;
-    public int RetryCount { get; set; } = 0;
+    public int RetryCount { get; set; }
     public int MaxRetries { get; set; } = 3;
 }
 
 public class WebhookQueueService : IWebhookQueueService
 {
-    private readonly ConcurrentQueue<WebhookJob> _queue = new();
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<WebhookQueueService> _logger;
+    private readonly ConcurrentQueue<WebhookJob> _queue = new();
 
     public WebhookQueueService(
         IHttpClientFactory httpClientFactory,
@@ -69,7 +70,7 @@ public class WebhookQueueService : IWebhookQueueService
             _logger.LogInformation("Processing webhook job: {Url}", job.Url);
 
             var jsonPayload = JsonSerializer.Serialize(job.Payload);
-            var content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             // Set timeout for webhook requests
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));

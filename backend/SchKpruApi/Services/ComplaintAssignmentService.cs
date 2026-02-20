@@ -9,9 +9,9 @@ public class ComplaintAssignmentService : IComplaintAssignmentService
 {
     private readonly IComplaintAssignmentRepository _assignmentRepository;
     private readonly IComplaintRepository _complaintRepository;
-    private readonly IUserRepository _userRepository;
     private readonly IDepartmentRepository _departmentRepository;
     private readonly IGroupRepository _groupRepository;
+    private readonly IUserRepository _userRepository;
 
     public ComplaintAssignmentService(
         IComplaintAssignmentRepository assignmentRepository,

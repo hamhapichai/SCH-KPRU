@@ -6,9 +6,9 @@ namespace SchKpruApi.Services;
 
 public class WebhookService : IWebhookService
 {
-    private readonly IWebhookQueueService _webhookQueue;
-    private readonly WebhookOptions _webhookOptions;
     private readonly ILogger<WebhookService> _logger;
+    private readonly WebhookOptions _webhookOptions;
+    private readonly IWebhookQueueService _webhookQueue;
 
     public WebhookService(
         IWebhookQueueService webhookQueue,
@@ -32,22 +32,22 @@ public class WebhookService : IWebhookService
         {
             var payload = new
             {
-                ComplaintId = complaint.ComplaintId,
-                TicketId = complaint.TicketId,
-                ContactName = complaint.ContactName,
-                ContactEmail = complaint.ContactEmail,
-                ContactPhone = complaint.ContactPhone,
-                Subject = complaint.Subject,
-                Message = complaint.Message,
-                IsAnonymous = complaint.IsAnonymous,
-                CurrentStatus = complaint.CurrentStatus,
-                SubmissionDate = complaint.SubmissionDate,
+                complaint.ComplaintId,
+                complaint.TicketId,
+                complaint.ContactName,
+                complaint.ContactEmail,
+                complaint.ContactPhone,
+                complaint.Subject,
+                complaint.Message,
+                complaint.IsAnonymous,
+                complaint.CurrentStatus,
+                complaint.SubmissionDate,
                 Event = "complaint.created",
                 Timestamp = DateTime.UtcNow
             };
 
             var webhookUrl = _webhookOptions.GetComplaintNewUrl();
-            await _webhookQueue.QueueWebhookAsync(webhookUrl, (object)payload);
+            await _webhookQueue.QueueWebhookAsync(webhookUrl, payload);
 
             _logger.LogInformation("Queued complaint created webhook for ComplaintId: {ComplaintId}",
                 complaint.ComplaintId);

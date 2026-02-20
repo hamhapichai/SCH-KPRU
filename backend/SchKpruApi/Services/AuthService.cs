@@ -1,7 +1,7 @@
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
 using SchKpruApi.DTOs;
 using SchKpruApi.Models;
 using SchKpruApi.Repositories.Interfaces;
@@ -11,8 +11,8 @@ namespace SchKpruApi.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly IUserRepository _userRepository;
 
     public AuthService(IUserRepository userRepository, IConfiguration configuration)
     {

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SchKpruApi.Models;
 using SchKpruApi.DTOs;
+using SchKpruApi.Models;
 using SchKpruApi.Services.Interfaces;
 
 namespace SchKpruApi.Controllers;

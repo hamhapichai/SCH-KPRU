@@ -1,9 +1,9 @@
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SchKpruApi.Services;
-using System.Text;
-using System.Text.Json;
 
 namespace SchKpruApi.Controllers;
 
@@ -13,8 +13,8 @@ namespace SchKpruApi.Controllers;
 public class AIToolsController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly WebhookOptions _webhookOptions;
     private readonly ILogger<AIToolsController> _logger;
+    private readonly WebhookOptions _webhookOptions;
 
     public AIToolsController(
         IHttpClientFactory httpClientFactory,
@@ -27,7 +27,7 @@ public class AIToolsController : ControllerBase
     }
 
     /// <summary>
-    /// Rewrite text to formal Thai language using AI via n8n webhook (synchronous)
+    ///     Rewrite text to formal Thai language using AI via n8n webhook (synchronous)
     /// </summary>
     [HttpPost("rewrite-formal")]
     public async Task<IActionResult> RewriteFormal([FromBody] RewriteFormalRequest request)

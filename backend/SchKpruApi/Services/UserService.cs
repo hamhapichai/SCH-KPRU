@@ -7,10 +7,10 @@ namespace SchKpruApi.Services;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IRoleRepository _roleRepository;
-    private readonly IDepartmentRepository _departmentRepository;
     private readonly IAuthService _authService;
+    private readonly IDepartmentRepository _departmentRepository;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IUserRepository _userRepository;
 
     public UserService(
         IUserRepository userRepository,
