@@ -75,6 +75,7 @@ Table Complaints {
  CurrentStatus text [not null]
  IsAnonymous boolean [default: false]
  TicketId uuid [unique, not null]
+ Urgent boolean
  UpdatedAt timestamp
  UpdatedByUserId integer
  
@@ -118,6 +119,20 @@ Table ComplaintLogs {
  note: 'Audit log for complaint actions'
 }
 
+Table ComplaintAttachments {
+ AttachmentId integer [pk, increment]
+ ComplaintId integer [not null]
+ FileName text [not null]
+ OriginalFileName text [not null]
+ S3Key text [not null]
+ S3Url text [not null]
+ ContentType text [not null]
+ FileSize bigint
+ UploadedAt timestamp [default: `now()`]
+ 
+ note: 'File attachments for complaints'
+}
+
 Table AISuggestions {
  AISuggestionId integer [pk, increment]
  ComplaintId integer [not null]
@@ -126,6 +141,7 @@ Table AISuggestions {
  SummarizedByAI text
  ConfidenceScore real
  SuggestedAt timestamp [default: `now()`]
+ N8nWorkflowId text
  
  note: 'AI-generated suggestions for complaints'
 }
@@ -141,6 +157,7 @@ Ref: Members.UserId > Users.UserId
 Ref: Complaints.ComplaintId < ComplaintAssignments.ComplaintId
 Ref: Complaints.ComplaintId < ComplaintLogs.ComplaintId
 Ref: Complaints.ComplaintId < AISuggestions.ComplaintId
+Ref: Complaints.ComplaintId < ComplaintAttachments.ComplaintId
 
 Ref: ComplaintAssignments.AssignedToDeptId > Departments.DepartmentId
 Ref: ComplaintAssignments.AssignedToGroupId > Groups.GroupId
