@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, X, User, Building, FileText, Clock, Users, CheckCircle, Paperclip, Sparkles } from 'lucide-react';
+import { Save, X, User, Building, FileText, Clock, Users, CheckCircle, Paperclip, Sparkles, CalendarClock, AlertTriangle } from 'lucide-react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import {
   Card,
@@ -30,6 +30,7 @@ const EditComplaintPage = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [complaintLogs, setComplaintLogs] = useState<ComplaintLog[]>([]);
+  const [assignments, setAssignments] = useState<ComplaintAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ const EditComplaintPage = () => {
       fetchComplaint();
       fetchComplaintLogs();
       fetchAiSuggestion();
+      fetchAssignments();
       if (user.roleName === 'Dean') {
         fetchDepartments();
       }
@@ -101,6 +103,15 @@ const EditComplaintPage = () => {
     } catch (error) {
       console.error('Error fetching complaint logs:', error);
       // Logs are optional, so we don't set an error
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const response = await complaintApi.getComplaintAssignments(parseInt(id as string));
+      setAssignments(response);
+    } catch (error) {
+      console.error('Error fetching complaint assignments:', error);
     }
   };
 
@@ -365,6 +376,42 @@ const EditComplaintPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  /**
+   * คำนวณ deadline จาก assignment ล่าสุดที่มี targetDate
+   * Returns { deadlineDate, daysLeft, isOverdue } หรือ null ถ้าไม่มี targetDate
+   */
+  const getDeadlineInfo = () => {
+    if (assignments.length === 0) return null;
+    // หา assignment ล่าสุด (assignmentId สูงสุด) ที่มี targetDate
+    const latest = [...assignments]
+      .sort((a, b) => b.assignmentId - a.assignmentId)
+      .find((a) => a.targetDate != null && a.isActive);
+    if (!latest || latest.targetDate == null) return null;
+
+    const days = typeof latest.targetDate === 'number'
+      ? latest.targetDate
+      : parseInt(latest.targetDate as unknown as string, 10);
+    if (isNaN(days)) return null;
+
+    const assignedDate = new Date(latest.assignedDate);
+    const deadlineDate = new Date(assignedDate);
+    deadlineDate.setDate(deadlineDate.getDate() + days);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadline = new Date(deadlineDate);
+    deadline.setHours(0, 0, 0, 0);
+    const diffMs = deadline.getTime() - today.getTime();
+    const daysLeft = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    return {
+      deadlineDate,
+      daysLeft,
+      isOverdue: daysLeft < 0,
+      isDueToday: daysLeft === 0,
+    };
   };
 
   if (loading) {
@@ -688,6 +735,66 @@ const EditComplaintPage = () => {
                 </p>
               </div>
             </div>
+
+            {/* Deadline display */}
+            {(() => {
+              const info = getDeadlineInfo();
+              if (!info) return null;
+              const isComplete = ['Completed', 'Closed'].includes(complaint.currentStatus);
+              const deadlineLabel = info.deadlineDate.toLocaleDateString('th-TH', {
+                year: 'numeric', month: 'long', day: 'numeric',
+              });
+              if (isComplete) {
+                return (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                    <CalendarClock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">กำหนดดำเนินการ</span>
+                      <p className="text-sm text-gray-600">{deadlineLabel}</p>
+                    </div>
+                  </div>
+                );
+              }
+              if (info.isOverdue) {
+                return (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                    <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <div>
+                      <span className="text-xs font-semibold text-red-600">เกินกำหนด!</span>
+                      <p className="text-sm font-medium text-red-700">
+                        ครบกำหนดวันที่ {deadlineLabel}{' '}
+                        <span className="text-red-500">({Math.abs(info.daysLeft)} วันที่แล้ว)</span>
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+              if (info.isDueToday) {
+                return (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+                    <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                    <div>
+                      <span className="text-xs font-semibold text-orange-600">ครบกำหนดวันนี้!</span>
+                      <p className="text-sm font-medium text-orange-700">
+                        กรุณาดำเนินการให้เสร็จภายในวันนี้ ({deadlineLabel})
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                  <CalendarClock className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <div>
+                    <span className="text-xs font-medium text-blue-600">กำหนดดำเนินการให้เสร็จ</span>
+                    <p className="text-sm font-medium text-blue-700">
+                      {deadlineLabel}{' '}
+                      <span className="text-blue-500">(อีก {info.daysLeft} วัน)</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 

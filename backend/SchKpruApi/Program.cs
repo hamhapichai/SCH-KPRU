@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using SchKpruApi.Data;
+using SchKpruApi.Options;
 using SchKpruApi.Repositories;
 using SchKpruApi.Services.Interfaces;
 using SchKpruApi.Services;
@@ -67,6 +68,10 @@ builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IAISuggestionService, AISuggestionService>();
 
+// Register Mail Service
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddScoped<IMailService, MailService>();
+
 // Register Webhook Services
 builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddSingleton<IWebhookQueueService, WebhookQueueService>();
@@ -91,6 +96,7 @@ builder.Services.AddScoped<IStorageService, StorageService>();
 
 // Register Background Services
 builder.Services.AddHostedService<WebhookQueueBackgroundService>();
+builder.Services.AddHostedService<DeadlineReminderBackgroundService>();
 
 // Register HttpClient
 builder.Services.AddHttpClient();

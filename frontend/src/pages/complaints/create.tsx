@@ -52,7 +52,6 @@ const CreateComplaintPage = () => {
   const [isDragging, setIsDragging] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const ACCEPTED_TYPES = ['image/*', 'video/*', 'application/pdf', '.doc', '.docx', '.xls', '.xlsx'];
   const MAX_FILE_SIZE_MB = 20;
 
   const addFiles = (incoming: FileList | null) => {
@@ -289,8 +288,9 @@ const CreateComplaintPage = () => {
                 <h3 className="text-lg font-medium text-heading">แนบไฟล์ (ถ้ามี)</h3>
 
                 {/* Drop zone */}
-                <div
-                  className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+                <button
+                  type="button"
+                  className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-colors w-full ${
                     isDragging
                       ? 'border-primary bg-primary/5'
                       : 'border-stroke bg-gray-1 hover:border-primary/50 hover:bg-primary/5'
@@ -299,6 +299,12 @@ const CreateComplaintPage = () => {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); }}
                   onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
                 >
                   <input
                     ref={fileInputRef}
@@ -313,14 +319,14 @@ const CreateComplaintPage = () => {
                   <p className="mt-1 text-xs text-body-color">
                     รูปภาพ, วิดีโอ, PDF, Word, Excel — สูงสุด {MAX_FILE_SIZE_MB} MB ต่อไฟล์
                   </p>
-                </div>
+                </button>
 
                 {/* File list */}
                 {attachedFiles.length > 0 && (
                   <ul className="space-y-2">
-                    {attachedFiles.map((file, index) => (
+                    {attachedFiles.map((file) => (
                       <li
-                        key={index}
+                        key={`${file.name}-${file.size}`}
                         className="flex items-center justify-between rounded-lg border border-stroke bg-white px-4 py-2"
                       >
                         <div className="flex min-w-0 items-center space-x-3">
@@ -332,7 +338,7 @@ const CreateComplaintPage = () => {
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeFile(index)}
+                          onClick={() => removeFile(attachedFiles.indexOf(file))}
                           className="ml-3 flex-shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
                         >
                           <X className="h-4 w-4" />
@@ -356,7 +362,11 @@ const CreateComplaintPage = () => {
                     <div className="mt-2 text-sm text-body-color">
                       <ul className="list-disc space-y-1 pl-5">
                         <li>เมื่อส่งข้อร้องเรียนแล้ว ท่านจะได้รับ Ticket ID สำหรับติดตามสถานะ</li>
-                        <li>ระบบจะดำเนินการตรวจสอบและประสานงานกับหน่วยงานที่เกี่ยวข้อง</li>
+                        {isUrgentValue && (
+                          <li>ระบบจะดำเนินการตรวจสอบและประสานงานกับหน่วยงานที่เกี่ยวข้องโดยด่วน</li>
+                        ) || (
+                          <li>ระบบจะดำเนินการตรวจสอบและประสานงานกับหน่วยงานที่เกี่ยวข้อง</li>
+                        )}
                         {/* <li>หากต้องการความช่วยเหลือเร่งด่วน กรุณาติดต่อหน่วยงานโดยตรง</li> */}
                       </ul>
                     </div>
